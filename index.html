@@ -5,10 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>DevBox IDE + FDR v2.4</title>
     
-    <!-- Wymuszenie trybu ciemnego w systemie i bezpieczne tło -->
     <meta name="color-scheme" content="dark">
     
-    <!-- PWA -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#00ffff">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
@@ -170,7 +168,7 @@
             position: absolute; top: 0; left: 0; width: 36px; height: 100%;
             background: rgba(255, 255, 255, 0.01); color: #999; text-align: right; 
             padding: 10px 0; box-sizing: border-box;
-            font-family: 'Courier New', Courier, monospace; font-size: 11.5px; line-height: 1.5;
+            font-family: Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.5;
             border-right: 1px solid var(--border-subtle); overflow: hidden; user-select: none; z-index: 3;
         }
 
@@ -179,15 +177,25 @@
             font-weight: bold; border-right: 2px solid #ff0055; display: inline-block; width: 100%; padding-right: 4px; box-sizing: border-box;
         }
 
+        /* Ujednolicony blok stylów dla zachowania idealnej pozycji kursora */
         .editor-container textarea, .editor-container pre {
             position: absolute; top: 0; left: 36px; width: calc(100% - 36px); height: 100%;
             margin: 0; padding: 10px; box-sizing: border-box;
-            font-family: 'Courier New', Courier, monospace; font-size: 11.5px; line-height: 1.5;
-            white-space: pre; overflow: auto; border: none; outline: none; background: transparent;
+            font-family: Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.5;
+            white-space: pre; border: none; outline: none; background: transparent;
+            letter-spacing: normal; word-spacing: normal;
         }
 
-        .editor-container textarea { color: transparent; background: transparent; caret-color: #ffffff; z-index: 2; resize: none; }
-        .editor-container pre { z-index: 1; color: #f8f8f2; pointer-events: none; }
+        .editor-container textarea { 
+            color: transparent; background: transparent; caret-color: #ffffff; z-index: 2; resize: none; 
+            -webkit-text-fill-color: transparent; /* Naprawa ukrywania czcionki na iOS bez psucia kursora */
+            overflow: auto;
+        }
+        .editor-container pre { 
+            z-index: 1; color: #f8f8f2; pointer-events: none; 
+            overflow: hidden; /* Wyłączenie niezależnych suwaków chroni przed rozjeżdżaniem tekstu */
+        }
+        
         iframe { width: 100%; flex: 1; background: #fff; border: none; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
 
         #fdr-container {
@@ -402,14 +410,14 @@
 
             titleEl.innerText = title; textEl.innerText = text;
             if (showInput) { inputEl.style.display = 'block'; inputEl.value = inputDefault || ''; } else { inputEl.style.display = 'none'; }
-            if (onConfirm) { btnCancel.style.display = showInput || text.includes('usunąć') ? 'inline-block' : 'none'; } else { btnCancel.style.display = 'none'; }
+            if (onConfirm) { btnCancel.style.display = showInput || text.includes('usunąć') || text.includes('zaktualizować') ? 'inline-block' : 'none'; } else { btnCancel.style.display = 'none'; }
             modal.classList.add('active');
 
             const newBtnConfirm = btnConfirm.cloneNode(true); const newBtnCancel = btnCancel.cloneNode(true);
             btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm); btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
 
             newBtnConfirm.addEventListener('click', () => { modal.classList.remove('active'); if (onConfirm) onConfirm(showInput ? inputEl.value : true); });
-            newBtnCancel.addEventListener('click', () => { modal.classList.remove('active'); });
+            newBtnCancel.addEventListener('click', () => { modal.classList.remove('active'); if (onConfirm) onConfirm(false); });
         }
 
         function showToast(message) {
@@ -704,17 +712,9 @@
 
         function showErrors(){
             if(devboxErrors.length===0){
-                showCustomModal({
-                    title:'Błędy',
-                    text:'Brak zarejestrowanych błędów.',
-                    showInput:false
-                });
+                showCustomModal({ title:'Błędy', text:'Brak zarejestrowanych błędów.', showInput:false });
             }else{
-                showCustomModal({
-                    title:'Błędy',
-                    text:devboxErrors.slice(-5).join('\n'),
-                    showInput:false
-                });
+                showCustomModal({ title:'Błędy', text:devboxErrors.slice(-5).join('\n'), showInput:false });
             }
         }
 
@@ -810,39 +810,22 @@
 
         function gotoLine() {
             showCustomModal({
-                title: "Przejdź do linii",
-                text: "Podaj numer linii:",
-                showInput: true,
-                inputDefault: "1",
+                title: "Przejdź do linii", text: "Podaj numer linii:", showInput: true, inputDefault: "1",
                 onConfirm: function(v) {
-                    const line = Math.max(1, parseInt(v || 1));
-                    const lines = editor.value.split('\n');
-                    let pos = 0;
-                    for(let i=0;i<line-1 && i<lines.length;i++){
-                        pos += lines[i].length + 1;
-                    }
-                    editor.focus();
-                    editor.setSelectionRange(pos, pos);
+                    const line = Math.max(1, parseInt(v || 1)); const lines = editor.value.split('\n'); let pos = 0;
+                    for(let i=0;i<line-1 && i<lines.length;i++){ pos += lines[i].length + 1; }
+                    editor.focus(); editor.setSelectionRange(pos, pos);
                 }
             });
         }
 
         function searchCode() {
             showCustomModal({
-                title: "Znajdź",
-                text: "Wpisz tekst do wyszukania:",
-                showInput: true,
-                inputDefault: "",
+                title: "Znajdź", text: "Wpisz tekst do wyszukania:", showInput: true, inputDefault: "",
                 onConfirm: function(v) {
-                    if(!v) return;
-                    const p = editor.value.indexOf(v);
-                    if(p >= 0){
-                        editor.focus();
-                        editor.setSelectionRange(p, p + v.length);
-                        logToFDR('Znaleziono: ' + v, 'inspect');
-                    } else {
-                        logToFDR('Nie znaleziono: ' + v, 'warning');
-                    }
+                    if(!v) return; const p = editor.value.indexOf(v);
+                    if(p >= 0){ editor.focus(); editor.setSelectionRange(p, p + v.length); logToFDR('Znaleziono: ' + v, 'inspect'); } 
+                    else { logToFDR('Nie znaleziono: ' + v, 'warning'); }
                 }
             });
         }
@@ -850,16 +833,52 @@
         if (window.innerWidth < 768) { switchView('edit'); } else { switchView('split'); }
         initFileManager(); runCode();
         
-        // PWA - Rejestracja Service Workera
+        // PWA - Automatyczne zarządzanie wersjami i wykrywanie aktualizacji w tle
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
-                        console.log('Service Worker zarejestrowany pomyślnie:', registration.scope);
+                        console.log('Service Worker zarejestrowany:', registration.scope);
+                        
+                        // Przypadek 1: Nowy kod już czeka w pamięci podręcznej na aktywację
+                        if (registration.waiting) {
+                            promptForAppUpdate(registration.waiting);
+                        }
+                        
+                        // Przypadek 2: Nowy kod został właśnie pobrany w tle podczas pracy
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    promptForAppUpdate(newWorker);
+                                }
+                            });
+                        });
                     })
-                    .catch(err => {
-                        console.log('Błąd rejestracji Service Workera:', err);
-                    });
+                    .catch(err => console.log('Błąd SW:', err));
+            });
+
+            // Automatyczne odświeżenie widoku w momencie przejęcia kontroli przez nowy skrypt
+            let refreshing = false;
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                if (!refreshing) {
+                    refreshing = true;
+                    window.location.reload();
+                }
+            });
+        }
+
+        function promptForAppUpdate(worker) {
+            logToFDR("Wykryto nową aktualizację środowiska na serwerze GitHub!", "system");
+            showCustomModal({
+                title: "Dostępna aktualizacja",
+                text: "Wykryto nową wersję aplikacji DevBox. Czy chcesz przeładować edytor, aby zastosować zmiany?",
+                showInput: false,
+                onConfirm: (confirmed) => {
+                    if (confirmed) {
+                        worker.postMessage({ action: 'skipWaiting' });
+                    }
+                }
             });
         }
     </script>
