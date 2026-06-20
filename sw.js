@@ -40,3 +40,10 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+// Nasłuchiwanie na sygnał skipWaiting wysłany z okienka aktualizacji w index.html
+self.addEventListener('message', (event) => {
+    if (event.data && event.data.action === 'skipWaiting') {
+        self.skipWaiting();
+    }
+});
