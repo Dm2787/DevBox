@@ -1,811 +1,863 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-<meta charset="UTF-8">
-<title>Materiałówka</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>DevBox IDE + FDR v2.4</title>
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#00ffff">
+    <link rel="apple-touch-icon" href="icon-192.png">
 
-<style>
-* { box-sizing: border-box; }
+    <style>
+        :root {
+            --accent-color: #00ffff;
+            --bg-main: #020202;
+            --bg-card: rgba(12, 12, 12, 0.8);
+            --border-color: rgba(0, 255, 255, 0.2);
+            --border-subtle: rgba(255, 255, 255, 0.06);
+            
+            /* Kolory Składni */
+            --syn-tag: #f92672;       
+            --syn-attr: #a6e22e;      
+            --syn-str: #e6db74;       
+            --syn-key: #66d9ef;       
+            --syn-comment: #75715e;   
+            --syn-tofu: #ff0055;
+        }
 
-body {
-    margin: 0;
-    font-family: system-ui, -apple-system, sans-serif;
-    background: #0f172a;
-    color: #e2e8f0;
-    padding: 10px;
-}
+        body {
+            background: radial-gradient(circle at center, #0f1416 0%, var(--bg-main) 100%);
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0; 
+            padding: 6px 6px calc(10px + env(safe-area-inset-bottom, 10px)) 6px;
+            box-sizing: border-box; 
+            position: fixed;
+            top: 0; bottom: 0; left: 0; right: 0;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
 
-/* NEONOWY NAGŁÓWEK */
-.neon-title {
-    font-size: 36px;
-    font-weight: 900;
-    text-align: center;
-    margin: 0;
-    color: #93c5fd;
-    text-shadow:
-        0 0 2px #93c5fd,
-        0 0 4px #60a5fa,
-        0 0 6px rgba(96,165,250,0.4);
-}
+        button, .tab-btn, .file-tab, .file-close, .btn-add-file-icon, .fdr-clear-btn {
+            -webkit-tap-highlight-color: transparent;
+            outline: none;
+        }
+        button:focus, .tab-btn:focus, .file-tab:focus {
+            outline: none;
+        }
 
-/* MAŁY PODPIS POD TYTUŁEM */
-.top-signature {
-    text-align: center;
-    margin-top: 2px;
-    font-family: "Brush Script MT", "Segoe Script", cursive;
-    font-size: 18px;
-    color: #fb923c;
-    text-shadow:
-        0 0 3px #fb923c,
-        0 0 6px #f97316;
-}
+        header {
+            padding: 6px 6px 2px 6px;
+        }
 
-/* PŁYWAJĄCA WYSZUKIWARKA */
-.floating-search {
-    position: sticky;
-    top: 0;
-    z-index: 999;
-    background: rgba(15, 23, 42, 0.85);
-    backdrop-filter: blur(6px);
-    padding: 12px 0 18px;
-    margin-bottom: 12px;
-    border-bottom: 3px solid #ef4444;
-    border-radius: 0 0 12px 12px;
-    animation: neonBarPulse 2.2s ease-in-out infinite;
-}
+        h1 { 
+            font-size: 0.85rem; letter-spacing: 0.8px; color: var(--accent-color); margin: 0; 
+            font-family: monospace; font-weight: 900; 
+        }
 
-@keyframes neonBarPulse {
-    0%   { border-bottom-color: rgba(239, 68, 68, 1); }
-    50%  { border-bottom-color: rgba(239, 68, 68, 0); }
-    100% { border-bottom-color: rgba(239, 68, 68, 1); }
-}
+        .top-navigation {
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 4px 6px 8px 6px;
+            border-bottom: 1px solid var(--border-color); 
+            margin-bottom: 6px;
+        }
 
-#searchInput {
-    width: 100%;
-    padding: 10px 12px;
-    border-radius: 10px;
-    border: 1px solid #ef4444;
-    background: #0f172a;
-    color: #e2e8f0;
-    font-size: 15px;
-}
+        .nav-row { 
+            display: flex; gap: 6px; width: 100%; 
+        }
 
-/* SEKCJE */
-.section {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 6px;
-    padding: 10px;
-    margin-bottom: 10px;
-}
+        .tabs { 
+            display: flex; background: rgba(255,255,255,0.03); border-radius: 8px; 
+            padding: 2px; border: 1px solid var(--border-subtle); flex: 1; 
+        }
+        
+        .tab-btn {
+            flex: 1; text-align: center;
+            background: none; border: none; color: #888; padding: 7px 5px; font-size: 0.65rem;
+            font-weight: bold; text-transform: uppercase; cursor: pointer; border-radius: 6px; transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .tab-btn.active { background: rgba(0,255,255,0.15); color: var(--accent-color); text-shadow: 0 0 4px rgba(0,255,255,0.4); }
 
-.section-title {
-    font-weight: 600;
-    margin-bottom: 6px;
-    font-size: 15px;
-    color: #cbd5e1;
-}
+        .btn-run {
+            flex: 1; text-align: center;
+            background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%); color: #ccc;
+            border: 1px solid rgba(255,255,255,0.12); padding: 7px 4px; font-size: 0.7rem;
+            border-radius: 8px; cursor: pointer; font-weight: bold; letter-spacing: 0.5px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); font-family: monospace;
+            white-space: nowrap;
+        }
+        .btn-run:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.3); }
+        
+        .btn-run.error-btn {
+            background: linear-gradient(135deg, rgba(255,0,85,0.1) 0%, rgba(128,0,42,0.05) 100%);
+            color: #ff0055; border-color: rgba(255,0,85,0.25);
+        }
+        .btn-run.error-btn:hover { background: #ff0055; color: #fff; border-color: #ff0055; box-shadow: 0 0 10px rgba(255,0,85,0.4); }
 
-/* ZAKŁADKI */
-.tabs-container {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-}
+        .btn-run.primary-run {
+            background: linear-gradient(135deg, rgba(0,255,255,0.15) 0%, rgba(0,128,128,0.1) 100%); 
+            color: var(--accent-color); border: 1px solid var(--accent-color);
+        }
+        .btn-run.primary-run:hover { background: var(--accent-color); color: #000; box-shadow: 0 0 12px var(--accent-color); }
 
-.tab {
-    padding: 6px 12px;
-    background: #334155;
-    border: 1px solid #475569;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 13px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
+        .toolbar-container {
+            display: flex; align-items: center; justify-content: space-between; gap: 6px;
+            background: rgba(15, 15, 15, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            padding: 4px 6px; border: 1px solid var(--border-subtle); border-radius: 10px; margin-bottom: 6px;
+        }
 
-.tab.active {
-    background: #1e3a8a;
-    border-color: #3b82f6;
-    box-shadow: 0 0 8px rgba(59,130,246,0.6);
-    font-weight: 700;
-}
+        .disk-zone { display: flex; gap: 4px; align-items: center; border-right: 1px solid rgba(255,255,255,0.1); padding-right: 6px; }
+        .btn-disk-action {
+            background: rgba(255, 255, 255, 0.04); color: #ccc; border: 1px solid rgba(255,255,255,0.06);
+            padding: 4px 8px; font-size: 9px; font-weight: bold; border-radius: 6px; cursor: pointer;
+            transition: all 0.2s; font-family: monospace; flex-shrink: 0;
+        }
+        .btn-disk-action.save:hover { background: rgba(46, 160, 67, 0.2); border-color: #2ea043; color: #56d364; }
+        .btn-disk-action.load:hover { background: rgba(56, 139, 253, 0.2); border-color: #388bfd; color: #58a6ff; }
 
-.tab-name {
-    pointer-events: none;
-}
+        .files-zone { display: flex; align-items: center; gap: 4px; overflow-x: auto; flex: 1; margin: 0 4px; white-space: nowrap; scrollbar-width: none; }
+        .files-zone::-webkit-scrollbar { display: none; }
+        
+        .file-tab {
+            display: inline-flex; align-items: center; gap: 6px; background: rgba(255, 255, 255, 0.02);
+            color: #888; padding: 4px 10px; font-size: 11px; font-family: monospace; border-radius: 6px; cursor: pointer; 
+            border: 1px solid transparent; transition: all 0.2s ease; position: relative;
+        }
+        .file-tab.active { 
+            background: rgba(0, 255, 255, 0.05); color: #fff; border-color: rgba(0, 255, 255, 0.1);
+        }
+        .file-tab.active::after {
+            content: ''; position: absolute; bottom: 0; left: 6px; right: 6px; height: 2px; background: var(--accent-color); border-radius: 2px; box-shadow: 0 0 6px var(--accent-color);
+        }
+        .file-close { color: rgba(248, 81, 73, 0.6); font-weight: bold; cursor: pointer; font-size: 11px; padding: 0 2px; border-radius: 4px; }
+        .file-close:hover { color: #f85149; background: rgba(248, 81, 73, 0.1); }
 
-.close-tab {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    background: rgba(255, 80, 80, 0.15);
-    border: 1px solid #f87171;
-    color: #fca5a5;
-    font-size: 14px;
-    font-weight: 900;
-    cursor: pointer;
-    transition: 0.2s;
-}
+        .btn-add-file-icon {
+            background: rgba(0,255,255,0.05); color: var(--accent-color); border: 1px dashed rgba(0,255,255,0.4);
+            width: 24px; height: 24px; min-width: 24px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0;
+        }
+        .btn-add-file-icon:hover { background: rgba(0,255,255,0.15); border-style: solid; box-shadow: 0 0 6px rgba(0,255,255,0.2); }
 
-.close-tab:hover {
-    background: #ef4444;
-    color: white;
-    box-shadow: 0 0 8px #ef4444;
-    transform: scale(1.15);
-}
+        .workspace { display: flex; flex-direction: column; flex: 1; gap: 6px; min-height: 0; }
+        @media (min-width: 768px) { .workspace { flex-direction: row; } }
 
-/* INPUTY */
-.scaffold-input,
-.notes-area,
-.calc-input {
-    width: 100%;
-    padding: 6px 8px;
-    border-radius: 4px;
-    border: 1px solid #475569;
-    background: #0f172a;
-    color: #e2e8f0;
-    font-size: 14px;
-}
+        .panel {
+            background: var(--bg-card); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+            border: 1px solid var(--border-subtle); border-radius: 14px;
+            display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5); transition: opacity 0.2s ease;
+        }
+        .panel.hidden-view { display: none !important; }
 
-.notes-area {
-    min-height: 70px;
-    resize: vertical;
-}
+        .panel-header {
+            background: rgba(16, 16, 16, 0.6); padding: 5px 10px;
+            font-size: 0.65rem; font-weight: bold; text-transform: uppercase;
+            letter-spacing: 0.8px; border-bottom: 1px solid var(--border-subtle); color: #888;
+            display: flex; justify-content: space-between; align-items: center;
+        }
 
-/* KALKULATOR */
-.calc-row { margin-bottom: 8px; }
+        .status-bar { font-size: 10px; color: #666; font-family: monospace; }
+        .editor-container { position: relative; flex: 1; margin: 0; padding: 0; overflow: hidden; background: #070707; }
 
-.calc-result {
-    font-size: 15px;
-    margin-top: 6px;
-    padding: 8px;
-    border-radius: 6px;
-    background: rgba(34,197,94,0.08);
-    border: 1px solid #22c55e;
-    box-shadow: 0 0 8px rgba(34,197,94,0.3);
-}
+        .line-numbers {
+            position: absolute; top: 0; left: 0; width: 36px; height: 100%;
+            background: rgba(255, 255, 255, 0.01); color: #999; text-align: right; 
+            padding: 10px 0; box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace; font-size: 11.5px; line-height: 1.5;
+            border-right: 1px solid var(--border-subtle); overflow: hidden; user-select: none; z-index: 3;
+        }
 
-/* MATERIAŁY */
-.material-card {
-    border-top: 1px solid #334155;
-    padding-top: 6px;
-    margin-top: 6px;
-}
+        .line-number-tofu-error {
+            background: rgba(255, 0, 85, 0.18) !important; color: #ff0055 !important;
+            font-weight: bold; border-right: 2px solid #ff0055; display: inline-block; width: 100%; padding-right: 4px; box-sizing: border-box;
+        }
 
-.material-name {
-    font-weight: 700;
-    font-size: 15px;
-    margin-bottom: 6px;
-    color: #93c5fd;
-    border-bottom: 1px solid #3b82f6;
-    padding-bottom: 3px;
-}
+        .editor-container textarea, .editor-container pre {
+            position: absolute; top: 0; left: 36px; width: calc(100% - 36px); height: 100%;
+            margin: 0; padding: 10px; box-sizing: border-box;
+            font-family: 'Courier New', Courier, monospace; font-size: 11.5px; line-height: 1.5;
+            white-space: pre; overflow: auto; border: none; outline: none; background: transparent;
+        }
 
-.dimension-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 6px 0;
-    border-bottom: 1px dashed #334155;
-}
+        .editor-container textarea { color: transparent; background: transparent; caret-color: #ffffff; z-index: 2; resize: none; }
+        .editor-container pre { z-index: 1; color: #f8f8f2; pointer-events: none; }
+        iframe { width: 100%; flex: 1; background: #fff; border: none; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
 
-.dimension-label {
-    font-size: 13px;
-    color: #cbd5e1;
-    transition: 0.25s;
-}
+        #fdr-container {
+            height: 165px; background: rgba(6, 8, 10, 0.95); border: 1px solid var(--border-color);
+            border-radius: 14px; margin-top: 6px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.05); flex-shrink: 0;
+        }
+        #fdr-console { flex: 1; padding: 6px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; background: #040608; }
+        
+        .fdr-log-card {
+            background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 8px; padding: 4px 8px; font-family: monospace; font-size: 10.5px; line-height: 1.4;
+            display: flex; align-items: flex-start; gap: 6px; word-break: break-all;
+            animation: fadeInLog 0.2s ease-out;
+        }
+        @keyframes fadeInLog { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
 
-.dimension-row.active-dimension {
-    background: rgba(34,197,94,0.08);
-    box-shadow: 0 0 10px rgba(34,197,94,0.25);
-}
+        .fdr-time { color: #aaa; font-size: 9px; margin-top: 1.5px; flex-shrink: 0; } 
+        
+        .fdr-badge {
+            font-size: 8.5px; font-weight: bold; padding: 1px 5px; border-radius: 4px; 
+            text-transform: uppercase; letter-spacing: 0.3px; flex-shrink: 0;
+            background: #111; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .fdr-badge.system { color: #58a6ff; background: rgba(56, 139, 253, 0.1); border-color: rgba(56, 139, 253, 0.2); }
+        .fdr-badge.info { color: #a3a3a3; background: rgba(255, 255, 255, 0.05); }
+        .fdr-badge.log { color: #7ee787; background: rgba(46, 160, 67, 0.1); border-color: rgba(46, 160, 67, 0.2); }
+        .fdr-badge.warning { color: #d4a373; background: rgba(212, 163, 115, 0.1); border-color: rgba(212, 163, 115, 0.2); }
+        .fdr-badge.net { color: #e6db74; background: rgba(230, 219, 116, 0.08); border-color: rgba(230, 219, 116, 0.15); }
+        .fdr-badge.inspect { color: #00ffff; background: rgba(0, 255, 255, 0.08); border-color: rgba(0, 255, 255, 0.2); }
+        .fdr-badge.storage { color: #ff79c6; background: rgba(255, 121, 198, 0.08); border-color: rgba(255, 121, 198, 0.2); }
+        .fdr-badge.touch { color: #ffb86c; background: rgba(255, 184, 108, 0.08); border-color: rgba(255, 184, 108, 0.2); }
+        .fdr-badge.error { color: #ff7b72; background: rgba(248, 81, 73, 0.12); border-color: rgba(248, 81, 73, 0.25); font-weight: 900; box-shadow: 0 0 6px rgba(248,81,73,0.1); }
 
-.dimension-row.active-dimension .dimension-label {
-    color: #86efac;
-    border-bottom: 1px solid #22c55e;
-    font-size: 15px;
-    font-weight: 700;
-    transform: scale(1.08);
-}
+        .fdr-msg { color: #e1e4e8; flex: 1; }
 
-/* PRZYCISKI ILOŚCI */
-.qty-box { display: flex; gap: 6px; }
+        #hidden-file-input { display: none; }
 
-.qty-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 4px;
-    border: 1px solid #475569;
-    background: #334155;
-    color: #e2e8f0;
-    font-size: 20px;
-    cursor: pointer;
-}
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.85); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: auto; }
+        
+        .modal-box {
+            background: #0d1117; border: 1px solid var(--border-color); border-radius: 16px;
+            width: 85%; max-width: 320px; padding: 18px; box-shadow: 0 0 30px rgba(0, 255, 255, 0.15);
+            transform: scale(0.92); transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); text-align: center;
+        }
+        .modal-overlay.active .modal-box { transform: scale(1); }
+        
+        .modal-title { font-size: 0.9rem; font-weight: bold; color: var(--accent-color); margin-bottom: 12px; font-family: monospace; text-transform: uppercase; letter-spacing: 0.5px; }
+        .modal-text { font-size: 0.8rem; color: #8b949e; margin-bottom: 16px; line-height: 1.4; }
+        
+        .modal-input {
+            width: 100%; background: #161b22; border: 1px solid var(--border-subtle); border-radius: 8px;
+            padding: 9px; color: #fff; font-family: monospace; font-size: 0.8rem; box-sizing: border-box;
+            margin-bottom: 16px; outline: none; text-align: center;
+        }
+        .modal-input:focus { border-color: var(--accent-color); }
+        
+        .modal-buttons { display: flex; justify-content: center; gap: 10px; }
+        .modal-btn { padding: 7px 16px; font-size: 0.75rem; font-weight: bold; border-radius: 8px; cursor: pointer; border: none; font-family: monospace; }
+        .modal-btn-confirm { background: var(--accent-color); color: #000; }
+        .modal-btn-cancel { background: rgba(255,255,255,0.06); color: #8b949e; }
 
-.qty {
-    width: 60px;
-    padding: 4px 6px;
-    text-align: center;
-    border-radius: 4px;
-    border: 1px solid #475569;
-    background: #0f172a;
-    color: #e2e8f0;
-}
+        .toast {
+            position: fixed; top: 55px; left: 50%; transform: translate(-50%, -15px);
+            background: rgba(0, 255, 255, 0.12); color: var(--accent-color);
+            border: 1px solid var(--accent-color); backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px); padding: 7px 18px; border-radius: 20px;
+            font-weight: bold; font-size: 10px; font-family: monospace; letter-spacing: 0.5px;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.15); opacity: 0;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100005; pointer-events: none; text-align: center;
+        }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+        
+        .fdr-title-zone { display: flex; align-items: center; gap: 4px; overflow: hidden; flex: 1; }
+        .fdr-label { font-weight: bold; color: var(--accent-color); white-space: nowrap; }
+        
+        .fdr-header-stats { display: flex; align-items: center; gap: 4px; margin-left: auto; padding-right: 8px; white-space: nowrap; }
+        .stat-badge { 
+            display: inline-block; background: rgba(255,255,255,0.1); padding: 2px 6px; 
+            border-radius: 4px; border: 1px solid rgba(255,255,255,0.2); font-size: 11px;
+            font-family: monospace; font-weight: bold; white-space: nowrap; flex-shrink: 0;
+            text-shadow: 0 0 2px rgba(255,255,255,0.3);
+        }
+        #fdr-stat-fps { color: #00ffff; text-shadow: 0 0 4px rgba(0, 255, 255, 0.4); border-color: rgba(0, 255, 255, 0.3); }
+        #fdr-stat-storage { color: #ff79c6; text-shadow: 0 0 4px rgba(255, 121, 198, 0.4); border-color: rgba(255, 121, 198, 0.3); }
+        .stat-badge.alert { color: #ff453a !important; border-color: rgba(255,69,58,0.5) !important; text-shadow: 0 0 4px rgba(255,69,58,0.5) !important; }
 
-.qty.selected {
-    border: 2px solid #22c55e !important;
-    background: #052e16;
-}
-
-/* ANIMACJE + / - */
-@keyframes clickPulseGreen {
-    0% { transform: scale(1); box-shadow: 0 0 0px #22c55e; }
-    50% { transform: scale(1.15); box-shadow: 0 0 10px #22c55e; }
-    100% { transform: scale(1); box-shadow: 0 0 0px #22c55e; }
-}
-
-@keyframes clickPulseRed {
-    0% { transform: scale(1); box-shadow: 0 0 0px #ef4444; }
-    50% { transform: scale(1.15); box-shadow: 0 0 10px #ef4444; }
-    100% { transform: scale(1); box-shadow: 0 0 0px #ef4444; }
-}
-
-.plus-click { animation: clickPulseGreen 0.25s ease-out; }
-.minus-click { animation: clickPulseRed 0.25s ease-out; }
-
-/* PODSUMOWANIE */
-.summary-box {
-    white-space: pre-wrap;
-    font-size: 13px;
-    border: 1px solid #334155;
-    border-radius: 4px;
-    padding: 8px;
-    background: #0f172a;
-    min-height: 60px;
-}
-
-/* PRZYCISKI DÓŁ */
-.btn-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 8px;
-}
-
-.btn {
-    flex: 1;
-    padding: 8px;
-    border-radius: 4px;
-    border: 1px solid #475569;
-    background: #334155;
-    font-size: 14px;
-    cursor: pointer;
-    color: #e2e8f0;
-    transition: 0.2s;
-}
-
-.btn-clear { background: #1f2937; }
-
-.btn-copy {
-    background: #1e3a8a;
-    border-color: #1d4ed8;
-}
-
-.btn-copy:hover {
-    background: #2563eb;
-    box-shadow: 0 0 10px rgba(37,99,235,0.7);
-    transform: scale(1.03);
-}
-
-/* NEONOWE PRZYCISKI USUWANIA */
-.btn-danger {
-    background: linear-gradient(135deg, #7f1d1d, #b91c1c);
-    border: 1px solid #ef4444;
-    color: #fee2e2;
-    box-shadow: 0 0 6px rgba(239,68,68,0.5);
-}
-
-.btn-danger:hover {
-    background: #dc2626;
-    box-shadow: 0 0 12px #ef4444;
-    transform: scale(1.05);
-}
-
-/* PODPIS DÓŁ */
-.signature {
-    margin-top: 40px;
-    text-align: center;
-    font-family: "Brush Script MT", "Segoe Script", cursive;
-    font-size: 26px;
-    color: #fb923c;
-    text-shadow:
-        0 0 4px #fb923c,
-        0 0 8px #f97316,
-        0 0 12px rgba(251,146,60,0.6);
-}
-</style>
+        .fdr-clear-btn {
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.2); color: #fff; 
+            font-size: 10px; padding: 4px 10px; border-radius: 6px; cursor: pointer; 
+            font-family: monospace; font-weight: bold; flex-shrink: 0; position: relative; z-index: 10; pointer-events: auto;
+        }
+        .fdr-clear-btn:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+    </style>
 </head>
 <body>
 
-<h1 class="neon-title">Materiałówka</h1>
-<div class="top-signature">by Damian Muttke</div>
+    <header>
+        <h1>⚡ DEVBOX // FDR v2.4</h1>
+    </header>
+    
+    <div class="top-navigation">
+        <div class="nav-row">
+            <div class="tabs">
+                <button id="tab-edit" class="tab-btn active" onclick="switchView('edit')">Kod</button>
+                <button id="tab-split" class="tab-btn" onclick="switchView('split')">Oba</button>
+                <button id="tab-preview" class="tab-btn" onclick="switchView('preview')">Ekran</button>
+            </div>
+        </div>
 
-<div class="floating-search">
-    <input id="searchInput" type="text" placeholder="Szukaj elementu...">
-</div>
-
-<!-- ZAKŁADKI -->
-<div class="section">
-    <div class="section-title">Budowy</div>
-    <div id="tabsContainer" class="tabs-container"></div>
-    <button id="addTabBtn" class="btn" style="margin-top:8px;">Dodaj zakładkę</button>
-</div>
-
-<div class="section">
-    <div class="section-title">Numer rusztowania</div>
-    <input id="scaffoldNumber" class="scaffold-input" type="text">
-</div>
-
-<div class="section">
-    <div class="section-title">Lista materiałów</div>
-    <div id="container"></div>
-</div>
-
-<div class="section">
-    <div class="section-title">Uwagi</div>
-    <textarea id="notesArea" class="notes-area"></textarea>
-    <button id="clearNotesBtn" class="btn btn-danger" style="margin-top:8px;">Usuń uwagi</button>
-</div>
-
-<div class="section">
-    <div class="section-title">Kalkulator m² / m³</div>
-
-    <div class="calc-row">
-        <label>Długość (np. 2,5+2,05+3):</label>
-        <input id="calcLength" class="calc-input" type="text">
+        <div class="nav-row">
+            <button class="btn-run error-btn" onclick="showErrors()">BŁĘDY</button>
+            <button class="btn-run" onclick="searchCode()">SZUKAJ</button>
+            <button class="btn-run" onclick="gotoLine()">LINIA</button>
+            <button class="btn-run primary-run" onclick="runCode()">URUCHOM</button>
+        </div>
     </div>
 
-    <div class="calc-row">
-        <label>Szerokość:</label>
-        <input id="calcWidth" class="calc-input" type="number" step="0.01">
+    <div class="toolbar-container">
+        <div class="disk-zone">
+            <button class="btn-disk-action save" onclick="saveActiveFileToDisk()">ZAPISZ</button>
+            <button class="btn-disk-action load" onclick="triggerLoadFromDisk()">OTWÓRZ</button>
+            <input type="file" id="hidden-file-input" onchange="loadFileFromDisk(event)" accept=".html,.css,.js,.txt">
+        </div>
+        <div class="files-zone" id="file-tabs-container"></div>
+        <button class="btn-add-file-icon" onclick="createNewFile()" title="Nowy Plik">+</button>
     </div>
 
-    <div class="calc-row">
-        <label>Wysokość:</label>
-        <input id="calcHeight" class="calc-input" type="number" step="0.01">
+    <div class="workspace">
+        <div id="panel-editor" class="panel">
+            <div class="panel-header">
+                <span id="current-file-title">Edytor kodu</span>
+                <div id="editor-stats" class="status-bar">Linie: 1 | Rozmiar: 0 KB</div>
+            </div>
+            <div class="editor-container">
+                <div id="gutter" class="line-numbers">1</div>
+                <textarea id="code-editor" spellcheck="false"></textarea>
+                <pre aria-hidden="true"><code id="highlight-layer"></code></pre>
+            </div>
+        </div>
+
+        <div id="panel-preview" class="panel hidden-view">
+            <div class="panel-header">Podgląd na żywo (Piaskownica)</div>
+            <iframe id="preview-sandbox"></iframe>
+        </div>
     </div>
 
-    <div id="calcResult" class="calc-result">Wyniki pojawią się tutaj.</div>
-
-    <button id="calcClearBtn" class="btn btn-danger" style="margin-top:10px;">Wyczyść kalkulator</button>
-</div>
-
-<div class="section">
-    <div class="section-title">Podsumowanie</div>
-    <div id="summaryContent" class="summary-box">Brak elementów do wyświetlenia.</div>
-    <div class="btn-row">
-        <button id="clearAllBtn" class="btn btn-clear">Wyczyść ilości</button>
-        <button id="copyBtn" class="btn btn-copy">Kopiuj</button>
+    <div id="fdr-container">
+        <div class="panel-header" style="border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 4px 8px;">
+            <div class="fdr-title-zone">
+                <span class="fdr-label">💾 CZARNA SKRZYNKA</span>
+            </div>
+            <div class="fdr-header-stats">
+                <div id="fdr-stat-fps" class="stat-badge">FPS: --</div>
+                <div id="fdr-stat-storage" class="stat-badge">DB: 0.00 KB</div>
+            </div>
+            <button class="fdr-clear-btn" onclick="clearFDR()">WYCZYŚĆ</button>
+        </div>
+        <div id="fdr-console"></div>
     </div>
-</div>
 
-<div class="signature">by Damian Muttke</div>
+    <div id="custom-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div id="modal-title" class="modal-title">Tytuł okna</div>
+            <div id="modal-text" class="modal-text">Treść komunikatu...</div>
+            <input type="text" id="modal-input" class="modal-input">
+            <div class="modal-buttons">
+                <button id="modal-btn-cancel" class="modal-btn modal-btn-cancel">Anuluj</button>
+                <button id="modal-btn-confirm" class="modal-btn modal-btn-confirm">OK</button>
+            </div>
+        </div>
+    </div>
 
-<script>
-const scaffoldInput = document.getElementById("scaffoldNumber");
-const notesArea = document.getElementById("notesArea");
-const container = document.getElementById("container");
+    <div id="toast-notification" class="toast">PLIK ZAPISANY POMYŚLNIE!</div>
 
-const calcLength = document.getElementById("calcLength");
-const calcWidth  = document.getElementById("calcWidth");
-const calcHeight = document.getElementById("calcHeight");
-const calcResult = document.getElementById("calcResult");
-/**************************************
- *  Z A K Ł A D K I
- **************************************/
-let tabs = JSON.parse(localStorage.getItem("tabs") || `["Budowa 1"]`);
-let currentTab = localStorage.getItem("currentTab") || "Budowa 1";
+    <script>
+        const editor = document.getElementById('code-editor');
+        const highlightLayer = document.getElementById('highlight-layer');
+        const gutter = document.getElementById('gutter');
+        const statsEl = document.getElementById('editor-stats');
+        const tabsContainer = document.getElementById('file-tabs-container');
+        const currentFileTitle = document.getElementById('current-file-title');
 
-function saveTabs() {
-    localStorage.setItem("tabs", JSON.stringify(tabs));
-    localStorage.setItem("currentTab", currentTab);
-}
+        let files = {};
+        let activeFileId = '';
+        let saveTimer = null;
+        const MAX_FDR_LOGS = 300;
+        let fdrErrors = 0;
+        let fdrNetwork = 0;
+        let fpsMin = 999;
+        let fpsMax = 0;
+        let dynamicSpyOffset = 170;
 
-function renderTabs() {
-    const tabsContainer = document.getElementById("tabsContainer");
-    tabsContainer.innerHTML = "";
+        const defaultIndexCode = `<!DOCTYPE html>\n<html>\n<head>\n    <meta charset="UTF-8">\n    <style>\n        .test-box { background: #111; padding: 20px; border: 2px solid #00ffff; color: #fff; margin-bottom: 10px; border-radius: 8px; text-align: center; }\n    </style>\n</head>\n<body>\n    <h3>DevBox v2.4 - PWA Edition</h3>\n    \n    <div id="carlift-panel" class="test-box" style="width: 280px; height: 60px;">\n        Wszystko na swoim miejscu.\n    </div>\n\n    <button onclick="zapiszDoBazy()">Zapisz do Storage</button>\n\n    <script>\n        function zapiszDoBazy() {\n            localStorage.setItem('carlift_test_key_' + Date.now(), 'Układ v2.4 działa');\n        }\n    <\/script>\n</body>\n</html>`;
 
-    tabs.forEach(tab => {
-        const el = document.createElement("div");
-        el.className = "tab" + (tab === currentTab ? " active" : "");
-        el.innerHTML = `
-            <span class="tab-name">${tab}</span>
-            <span class="close-tab" data-tab="${tab}">✕</span>
-        `;
+        const tofuRegex = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F\u200B-\u200D\uFEFF]/g;
 
-        el.addEventListener("click", (e) => {
-            if (e.target.classList.contains("close-tab")) return;
-            currentTab = tab;
-            saveTabs();
-            loadData();
-            renderTabs();
-        });
+        function showCustomModal({ title, text, showInput, inputDefault, onConfirm }) {
+            const modal = document.getElementById('custom-modal');
+            const titleEl = document.getElementById('modal-title');
+            const textEl = document.getElementById('modal-text');
+            const inputEl = document.getElementById('modal-input');
+            const btnConfirm = document.getElementById('modal-btn-confirm');
+            const btnCancel = document.getElementById('modal-btn-cancel');
 
-        tabsContainer.appendChild(el);
-    });
+            titleEl.innerText = title; textEl.innerText = text;
+            if (showInput) { inputEl.style.display = 'block'; inputEl.value = inputDefault || ''; } else { inputEl.style.display = 'none'; }
+            if (onConfirm) { btnCancel.style.display = showInput || text.includes('usunąć') ? 'inline-block' : 'none'; } else { btnCancel.style.display = 'none'; }
+            modal.classList.add('active');
 
-    document.querySelectorAll(".close-tab").forEach(btn => {
-        btn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            const name = e.target.dataset.tab;
+            const newBtnConfirm = btnConfirm.cloneNode(true); const newBtnCancel = btnCancel.cloneNode(true);
+            btnConfirm.parentNode.replaceChild(newBtnConfirm, btnConfirm); btnCancel.parentNode.replaceChild(newBtnCancel, btnCancel);
 
-            if (tabs.length === 1) {
-                alert("Musi istnieć przynajmniej jedna zakładka.");
-                return;
+            newBtnConfirm.addEventListener('click', () => { modal.classList.remove('active'); if (onConfirm) onConfirm(showInput ? inputEl.value : true); });
+            newBtnCancel.addEventListener('click', () => { modal.classList.remove('active'); });
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast-notification');
+            toast.innerText = message; toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+
+        function getFileLabel(name) {
+            if (name.endsWith('.html')) return 'HTML: ' + name.replace('.html','');
+            if (name.endsWith('.css')) return 'CSS: ' + name.replace('.css','');
+            if (name.endsWith('.js')) return 'JS: ' + name.replace('.js','');
+            return name;
+        }
+
+        function initFileManager() {
+            const saved = localStorage.getItem('devbox_multianalog_files');
+            const savedActive = localStorage.getItem('devbox_active_file_id');
+            if (saved) {
+                files = JSON.parse(saved); activeFileId = savedActive || Object.keys(files)[0];
+                let hasIndex = false; for (const id in files) { if (files[id].name === 'index.html') { hasIndex = true; break; } }
+                if (!hasIndex) { files['file_index'] = { name: 'index.html', content: defaultIndexCode }; activeFileId = 'file_index'; }
+            } else {
+                files['file_index'] = { name: 'index.html', content: defaultIndexCode }; activeFileId = 'file_index';
             }
+            saveToStorage(); renderFileTabs(); loadFileContent(activeFileId);
+        }
 
-            tabs = tabs.filter(t => t !== name);
-            localStorage.removeItem("data_" + name);
+        function renderFileTabs() {
+            let html = '';
+            for (const id in files) {
+                const isActive = (id === activeFileId) ? 'active' : '';
+                html += `<div class="file-tab ${isActive}" onclick="setActiveFile('${id}')"><span>${getFileLabel(files[id].name)}</span><span class="file-close" onclick="deleteFile(event, '${id}')">×</span></div>`;
+            }
+            tabsContainer.innerHTML = html;
+        }
 
-            if (currentTab === name) currentTab = tabs[0];
-
-            saveTabs();
-            renderTabs();
-            loadData();
-        });
-    });
-}
-
-document.getElementById("addTabBtn").addEventListener("click", () => {
-    let nr = tabs.length + 1;
-    let newName = "Budowa " + nr;
-
-    while (tabs.includes(newName)) {
-        nr++;
-        newName = "Budowa " + nr;
-    }
-
-    tabs.push(newName);
-    currentTab = newName;
-    saveTabs();
-    renderTabs();
-    clearAllFields();
-});
-
-/**************************************
- *  D A N E   M A T E R I A Ł Ó W
- **************************************/
-const data = {
-    "Podkład": [],
-    "Stopa": [],
-    "Stopa regulowana": [],
-    "Pion": ["0,5m","1m","1,5m","2m","2,5m","3m"],
-    "Rygiel": ["0,3m","0,5m","0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Wanga": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Reka": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Diagonal": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Konsola": ["23cm","35cm","46cm","46cm wysuwana","0,7m","0,77m","1,01m","1,25m"],
-    "Blacha stal 23cm": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Blacha alu 23cm": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Blacha francuz": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Lem 0,40m": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Lem 0,60m": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Klapa": ["1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Drabina": ["2m","3m"],
-    "Burtnica aluminiowa": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Burtnica drewniana": ["0,7m","0,77m","1,01m","1,25m","1,65m","1,96m","2,05m","2,5m","3m"],
-    "Plastiki do burtnic": [],
-    "Deski": ["1m","1,5m","2m","2,5m","3m"],
-    "Rura": ["1m","1,5m","2m","2,5m","3m"],
-    "Cwaniak blacha-blacha": ["0,3m","0,5m","0,7m","1m"],
-    "Cwaniak blacha-rygiel": ["0,3m","0,5m","0,7m","1m"],
-    "Chuj na rygla": [],
-    "Chuj na wange": [],
-    "Pizza 30": [],
-    "Pizza 40": [],
-    "Złącza stałe": [],
-    "Złącza obrotowe": [],
-    "Kajdanki": [],
-    "Szczypa": [],
-    "Specjal": [],
-    "Koszyk na rygla": [],
-    "Koszyk na wangę": []
-};
-
-/**************************************
- *  G E N E R O W A N I E   M A T E R I A Ł ÓW
- **************************************/
-function generateMaterialList() {
-    container.innerHTML = "";
-
-    Object.keys(data).forEach(material => {
-        const card = document.createElement("div");
-        card.className = "material-card";
-        card.innerHTML = `<div class="material-name">${material}</div>`;
-
-        if (data[material].length === 0) {
-            const key = `${material}_single`;
-            card.innerHTML += `
-                <div class="dimension-row">
-                    <div class="dimension-label">szt.</div>
-                    <div class="qty-box">
-                        <button class="qty-btn" data-delta="-1" data-key="${key}">−</button>
-                        <input class="qty" data-key="${key}" type="number" min="0" value="0">
-                        <button class="qty-btn" data-delta="1" data-key="${key}">+</button>
-                    </div>
-                </div>`;
-        } else {
-            data[material].forEach(wymiar => {
-                const key = `${material}_${wymiar}`;
-                card.innerHTML += `
-                    <div class="dimension-row">
-                        <div class="dimension-label">${wymiar}</div>
-                        <div class="qty-box">
-                            <button class="qty-btn" data-delta="-1" data-key="${key}">−</button>
-                            <input class="qty" data-key="${key}" type="number" min="0" value="0">
-                            <button class="qty-btn" data-delta="1" data-key="${key}">+</button>
-                        </div>
-                    </div>`;
+        function createNewFile() {
+            showCustomModal({
+                title: "Nowy plik", text: "Podaj nazwę pliku:", showInput: true, inputDefault: "aplikacja.html",
+                onConfirm: (name) => {
+                    if (!name) return; const newId = 'file_' + Date.now(); files[newId] = { name: name, content: "" }; activeFileId = newId;
+                    saveToStorage(); renderFileTabs(); loadFileContent(newId); logToFDR(`Utworzono nowy plik: ${name}`, 'system');
+                }
             });
         }
 
-        container.appendChild(card);
-    });
-}
-
-/**************************************
- *  K A L K U L A T O R
- **************************************/
-function calculateAreaVolume() {
-    let lengthInput = calcLength.value.replace(",", ".");
-    let parts = lengthInput.split("+").map(v => parseFloat(v.trim().replace(",", ".")));
-
-    let totalLength = 0;
-    parts.forEach(n => { if (!isNaN(n)) totalLength += n; });
-
-    let width  = parseFloat((calcWidth.value  || "0").replace(",", "."))  || 0;
-    let height = parseFloat((calcHeight.value || "0").replace(",", ".")) || 0;
-
-    let area   = totalLength * width;
-    let volume = totalLength * width * height;
-
-    if (!lengthInput && !width && !height) {
-        calcResult.innerHTML = "Wyniki pojawią się tutaj.";
-    } else {
-        calcResult.innerHTML =
-            `Suma długości: <b>${totalLength.toFixed(2)} m</b><br>` +
-            `Szerokość: <b>${width.toFixed(2)} m</b><br>` +
-            `Wysokość: <b>${height.toFixed(2)} m</b><br>` +
-            `m²: <b>${area.toFixed(2)}</b><br>` +
-            `m³: <b>${volume.toFixed(2)}</b>`;
-    }
-
-    return { totalLength, width, height, area, volume };
-}
-
-calcLength.addEventListener("input", () => { calculateAreaVolume(); updateSummary(); saveData(); });
-calcWidth.addEventListener("input",  () => { calculateAreaVolume(); updateSummary(); saveData(); });
-calcHeight.addEventListener("input", () => { calculateAreaVolume(); updateSummary(); saveData(); });
-
-document.getElementById("calcClearBtn").addEventListener("click", () => {
-    calcLength.value = "";
-    calcWidth.value  = "";
-    calcHeight.value = "";
-    calcResult.innerHTML = "Wyniki pojawią się tutaj.";
-    updateSummary();
-    saveData();
-});
-/**************************************
- *  A N I M A C J E   + / -
- **************************************/
-function animateButton(btn, delta) {
-    const cls = delta > 0 ? "plus-click" : "minus-click";
-    btn.classList.remove(cls);
-    void btn.offsetWidth;
-    btn.classList.add(cls);
-}
-
-container.addEventListener("click", (e) => {
-    if (!e.target.classList.contains("qty-btn")) return;
-
-    const btn   = e.target;
-    const delta = parseInt(btn.dataset.delta, 10);
-    const input = btn.parentElement.querySelector("input.qty");
-
-    animateButton(btn, delta);
-
-    let value = parseInt(input.value) || 0;
-    value = Math.max(0, value + delta);
-
-    input.value = value;
-    updateQtyHighlight(input);
-    updateDimensionHighlight(input);
-    updateSummary();
-    saveData();
-});
-
-/**************************************
- *  P O D Ś W I E T L A N I E
- **************************************/
-function updateDimensionHighlight(input) {
-    const row = input.closest(".dimension-row");
-    if (!row) return;
-    const value = parseInt(input.value) || 0;
-    if (value > 0) row.classList.add("active-dimension");
-    else row.classList.remove("active-dimension");
-}
-
-function updateQtyHighlight(input) {
-    const value = parseInt(input.value) || 0;
-    if (value > 0) input.classList.add("selected");
-    else input.classList.remove("selected");
-}
-
-document.addEventListener("input", (e) => {
-    if (e.target.classList.contains("qty")) {
-        updateQtyHighlight(e.target);
-        updateDimensionHighlight(e.target);
-        updateSummary();
-        saveData();
-    }
-});
-
-/**************************************
- *  W Y S Z U K I W A R K A
- **************************************/
-document.getElementById("searchInput").addEventListener("input", function () {
-    const text = this.value.toLowerCase();
-    document.querySelectorAll(".material-card").forEach(item => {
-        const name = item.querySelector(".material-name").textContent.toLowerCase();
-        item.style.display = name.includes(text) ? "" : "none";
-    });
-});
-
-/**************************************
- *  P O D S U M O W A N I E
- **************************************/
-function updateSummary() {
-    const box = document.getElementById("summaryContent");
-    let summary = "";
-
-    /* MATERIAŁY */
-    document.querySelectorAll("input.qty").forEach(input => {
-        const value = parseInt(input.value) || 0;
-        if (value > 0) {
-            const parent = input.closest(".material-card");
-            const name = parent.querySelector(".material-name").textContent;
-            const dimEl = input.closest(".dimension-row");
-            const dimension = dimEl ? dimEl.querySelector(".dimension-label").textContent : "";
-            summary += `${name} ${dimension} — ${value} szt.\n`;
+        function saveActiveFileToDisk() {
+            const activeFile = files[activeFileId]; if (!activeFile) return;
+            const blob = new Blob([editor.value], { type: 'text/html' }); const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob); link.download = activeFile.name; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+            showToast(`ZAPISANO: ${activeFile.name}`); logToFDR(`Zapisano plik "${activeFile.name}" w telefonie.`, 'system');
         }
-    });
 
-    /* NUMER RUSZTOWANIA */
-    if (scaffoldInput.value.trim() !== "")
-        summary += `\nNumer rusztowania: ${scaffoldInput.value.trim()}\n`;
+        function triggerLoadFromDisk() { document.getElementById('hidden-file-input').click(); }
+        function loadFileFromDisk(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result; const name = file.name; const newId = 'file_' + Date.now();
+                files[newId] = { name: name, content: content }; activeFileId = newId;
+                saveToStorage(); renderFileTabs(); loadFileContent(newId); showToast(`WCZYTANO: ${name}`); logToFDR(`Wczytano plik "${name}" z urządzenia!`, 'system');
+            };
+            reader.readAsText(file); event.target.value = '';
+        }
 
-    /* UWAGI */
-    if (notesArea.value.trim() !== "")
-        summary += `\nUwagi:\n${notesArea.value.trim()}\n`;
+        function setActiveFile(id) { if (activeFileId === id) return; activeFileId = id; localStorage.setItem('devbox_active_file_id', activeFileId); renderFileTabs(); loadFileContent(id); }
+        function loadFileContent(id) { editor.value = files[id].content; currentFileTitle.innerText = `Edytor: ${files[id].name}`; updateHighlight(); }
 
-    /* KALKULATOR */
-    const calc = calculateAreaVolume();
-    if (calc.totalLength > 0 || calc.width > 0 || calc.height > 0) {
-        summary += `\nKalkulator:\n`;
-        summary += `Suma długości: ${calc.totalLength.toFixed(2)} m\n`;
-        summary += `Szerokość: ${calc.width.toFixed(2)} m\n`;
-        summary += `Wysokość: ${calc.height.toFixed(2)} m\n`;
-        summary += `m²: ${calc.area.toFixed(2)}\n`;
-        summary += `m³: ${calc.volume.toFixed(2)}\n`;
-    }
+        function deleteFile(event, id) {
+            event.stopPropagation(); if (files[id].name === 'index.html') { showCustomModal({ title: "Błąd operacji", text: "Nie można usunąć pliku index.html!", showInput: false }); return; }
+            showCustomModal({
+                title: "Usuwanie pliku", text: `Czy na pewno usunąć plik "${files[id].name}"?`, showInput: false,
+                onConfirm: (confirmed) => {
+                    if (confirmed) {
+                        const name = files[id].name; delete files[id];
+                        if (activeFileId === id) { activeFileId = 'file_index'; localStorage.setItem('devbox_active_file_id', activeFileId); }
+                        saveToStorage(); renderFileTabs(); loadFileContent(activeFileId); logToFDR(`Usunięto plik z edytora: ${name}`, 'system');
+                    }
+                }
+            });
+        }
 
-        if (summary === "") summary = "Brak elementów do wyświetlenia.";
-    box.textContent = summary;
-}
+        function saveToStorage() {
+            localStorage.setItem('devbox_multianalog_files', JSON.stringify(files));
+        }
 
-/**************************************
- *  Z A P I S   D A N Y C H
- **************************************/
-function saveData() {
-    const all = {};
+        function saveToStorageDebounced() {
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveToStorage, 500);
+        }
 
-    document.querySelectorAll("input.qty").forEach(input => {
-        all[input.dataset.key] = input.value;
-    });
+        function syntaxHighlighter(text) {
+            if (!text) return ""; let cleanHtml = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const tokenRegex = /(\/\/.*)|((['"`])(?:\\.|[^\\])*?\3)|(&lt;\/?[a-zA-Z0-9:-]+)|(\b[a-zA-Z0-9:-]+=(?=(?:['"`]|&quot;)))|(\b(const|let|var|function|return|if|else|for|while|window|document|addEventListener)\b)/g;
+            cleanHtml = cleanHtml.replace(tokenRegex, (match, comment, string, q, tag, attr, keyword) => {
+                if (comment) return `<span style="color: var(--syn-comment);">${match}</span>`; if (string) return `<span style="color: var(--syn-str);">${match}</span>`;
+                if (tag) return `<span style="color: var(--syn-tag);">${match}</span>`; if (attr) return `<span style="color: var(--syn-attr);">${match}</span>`;
+                if (keyword) return `<span style="color: var(--syn-key);">${match}</span>`; return match;
+            });
+            cleanHtml = cleanHtml.replace(tofuRegex, (match) => {
+                const hex = match.charCodeAt(0).toString(16).toUpperCase();
+                return `<span style="background: rgba(255, 0, 85, 0.25) !important; color: #ff0055 !important; border: 1px dashed #ff0055; border-radius: 3px; padding: 0 2px; font-weight: bold; pointer-events: auto;" title="Błąd Unicode: U+${hex}">[U+${hex}]</span>`;
+            });
+            return cleanHtml;
+        }
 
-    all.scaffold   = scaffoldInput.value;
-    all.notes      = notesArea.value;
-    all.calcLength = calcLength.value;
-    all.calcWidth  = calcWidth.value;
-    all.calcHeight = calcHeight.value;
+        function updateStatsAndLines() {
+            const text = editor.value; const lines = text.split('\n'); const linesCount = text === "" ? 1 : lines.length;
+            const byteLength = new Blob([text]).size; const kbSize = (byteLength / 1024).toFixed(2);
+            statsEl.innerText = `Linie: ${linesCount} | Rozmiar: ${kbSize} KB`;
+            let linesHtml = '';
+            for (let i = 0; i < linesCount; i++) {
+                const lineNum = i + 1;
+                if (lines[i] && tofuRegex.test(lines[i])) { tofuRegex.lastIndex = 0; linesHtml += `<span class="line-number-tofu-error">${lineNum}</span><br>`; } 
+                else { linesHtml += `<span>${lineNum}</span><br>`; }
+            }
+            gutter.innerHTML = linesHtml; if (activeFileId && files[activeFileId]) { files[activeFileId].content = text; saveToStorageDebounced(); }
+        }
 
-    localStorage.setItem("data_" + currentTab, JSON.stringify(all));
-}
+        function updateHighlight() { highlightLayer.innerHTML = syntaxHighlighter(editor.value); updateStatsAndLines(); }
+        function syncScroll() { const preContainer = highlightLayer.parentElement; preContainer.scrollTop = editor.scrollTop; preContainer.scrollLeft = editor.scrollLeft; gutter.scrollTop = editor.scrollTop; }
 
-/**************************************
- *  O D C Z Y T   D A N Y C H
- **************************************/
-function loadData() {
-    const saved = JSON.parse(localStorage.getItem("data_" + currentTab) || "{}");
+        editor.addEventListener('input', () => { updateHighlight(); syncScroll(); });
+        editor.addEventListener('scroll', syncScroll);
+        editor.addEventListener('keyup', () => { updateStatsAndLines(); syncScroll(); });
+        editor.addEventListener('click', syncScroll);
 
-    document.querySelectorAll("input.qty").forEach(input => {
-        input.value = saved[input.dataset.key] || 0;
-        updateQtyHighlight(input);
-        updateDimensionHighlight(input);
-    });
+        function switchView(viewMode) {
+            const panelEditor = document.getElementById('panel-editor'); const panelPreview = document.getElementById('panel-preview');
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            if (viewMode === 'edit') { document.getElementById('tab-edit').classList.add('active'); panelEditor.classList.remove('hidden-view'); panelPreview.classList.add('hidden-view'); } 
+            else if (viewMode === 'preview') { document.getElementById('tab-preview').classList.add('active'); panelEditor.classList.add('hidden-view'); panelPreview.classList.remove('hidden-view'); } 
+            else if (viewMode === 'split') { document.getElementById('tab-split').classList.add('active'); panelEditor.classList.remove('hidden-view'); panelPreview.classList.remove('hidden-view'); }
+            setTimeout(syncScroll, 50);
+        }
 
-    scaffoldInput.value = saved.scaffold   || "";
-    notesArea.value     = saved.notes      || "";
-    calcLength.value    = saved.calcLength || "";
-    calcWidth.value     = saved.calcWidth  || "";
-    calcHeight.value    = saved.calcHeight || "";
+        function logToFDR(msg, type = 'info') {
+            const consoleEl = document.getElementById("fdr-console"); if (!consoleEl) return;
+            const timestamp = new Date().toLocaleTimeString('pl-PL');
+            const logCard = document.createElement('div');
+            logCard.className = 'fdr-log-card';
+            logCard.innerHTML = `
+                <span class="fdr-time">${timestamp}</span>
+                <span class="fdr-badge ${type}">${type}</span>
+                <span class="fdr-msg">${msg}</span>
+            `;
+            consoleEl.appendChild(logCard);
+            while (consoleEl.children.length > MAX_FDR_LOGS) {
+                consoleEl.removeChild(consoleEl.firstChild);
+            }
+            consoleEl.scrollTop = consoleEl.scrollHeight;
+        }
 
-    calculateAreaVolume();
-    updateSummary();
-}
+        function clearFDR() { document.getElementById("fdr-console").innerHTML = ""; logToFDR("Rejestrator FDR zresetowany.", "system"); }
 
-/**************************************
- *  NATYCHMIASTOWE AKTUALIZACJE UWAG I RUSZTOWANIA
- **************************************/
-notesArea.addEventListener("input", () => {
-    updateSummary();
-    saveData();
-});
+        const fdrSpyScript = `
+        <script>
+            window.addEventListener('error', function(e) {
+                if (e.target && (e.target.tagName === 'IMG' || e.target.tagName === 'SCRIPT' || e.target.tagName === 'LINK')) {
+                    var fileSrc = e.target.src || e.target.href || 'nieznany plik';
+                    window.parent.postMessage({type: 'FDR_NET_ERROR', tag: e.target.tagName, file: fileSrc.substring(fileSrc.lastIndexOf('/') + 1)}, '*');
+                } else {
+                    window.parent.postMessage({type:'FDR_ERROR',message:e.message,line:e.lineno},'*');
+                }
+            }, true);
+            
+            window.addEventListener('unhandledrejection', function(e) {
+                var errorLine = '?'; var reason = e.reason; var msg = reason;
+                if (reason && reason instanceof Error) {
+                    msg = reason.message;
+                    if (reason.stack) { var match = reason.stack.match(/:(\\d+):(\\d+)/); if (match && match[1]) errorLine = parseInt(match[1]); }
+                } else if (reason) {
+                    msg = reason; window.parent.postMessage({type:'FDR_PROMISE_STRING_ERROR',message:'Unhandled Promise: ' + msg},'*'); return;
+                }
+                window.parent.postMessage({type:'FDR_PROMISE_ERROR',message:'Unhandled Promise: ' + msg,line: errorLine},'*');
+            });
 
-scaffoldInput.addEventListener("input", () => {
-    updateSummary();
-    saveData();
-});
+            var _log = console.log; var _warn = console.warn;
+            console.log = function() {
+                var args = Array.prototype.slice.call(arguments).join(' ');
+                window.parent.postMessage({type: 'FDR_CONSOLE_LOG', msg: args, mode: 'log'}, '*');
+                _log.apply(console, arguments);
+            };
+            console.warn = function() {
+                var args = Array.prototype.slice.call(arguments).join(' ');
+                window.parent.postMessage({type: 'FDR_CONSOLE_LOG', msg: args, mode: 'warning'}, '*');
+                _warn.apply(console, arguments);
+            };
 
-/**************************************
- *  R E S E T
- **************************************/
-function clearAllFields() {
-    document.querySelectorAll("input.qty").forEach(input => {
-        input.value = 0;
-        updateQtyHighlight(input);
-        updateDimensionHighlight(input);
-    });
-    scaffoldInput.value = "";
-    notesArea.value = "";
-    calcLength.value = "";
-    calcWidth.value = "";
-    calcHeight.value = "";
-    calcResult.innerHTML = "Wyniki pojawią się tutaj.";
-    updateSummary();
-    saveData();
-}
+            var frames = 0; var lastTime = performance.now();
+            function calculateFPS() {
+                frames++; var now = performance.now();
+                if (now >= lastTime + 1000) {
+                    var fps = Math.round((frames * 1000) / (now - lastTime));
+                    window.parent.postMessage({type: 'FDR_TELEMETRY_FPS', fps: fps}, '*');
+                    frames = 0; lastTime = now;
+                }
+                requestAnimationFrame(calculateFPS);
+            }
+            requestAnimationFrame(calculateFPS);
 
-document.getElementById("clearAllBtn").addEventListener("click", () => {
-    clearAllFields();
-});
+            var origFetch = window.fetch;
+            window.fetch = function() {
+                var url = arguments[0]; var fetchLine = '?';
+                try {
+                    var err = new Error();
+                    if (err.stack) {
+                        var lines = err.stack.split('\\n'); var targetLine = lines[2] || lines[1] || '';
+                        var match = targetLine.match(/:(\\d+):(\\d+)/); if (match && match[1]) fetchLine = parseInt(match[1]);
+                    }
+                } catch(e) {}
+                window.parent.postMessage({type: 'FDR_NETWORK_FETCH', url: url, status: 'SENDING', line: fetchLine}, '*');
+                return origFetch.apply(this, arguments).then(function(response) {
+                    window.parent.postMessage({type: 'FDR_NETWORK_FETCH', url: url, status: response.status, line: fetchLine}, '*');
+                    return response;
+                }).catch(function(err) {
+                    window.parent.postMessage({type: 'FDR_NETWORK_FETCH', url: url, status: 'FAILED', line: fetchLine}, '*');
+                    throw err;
+                });
+            };
 
-document.getElementById("clearNotesBtn").addEventListener("click", () => {
-    notesArea.value = "";
-    updateSummary();
-    saveData();
-});
+            var origOpen = XMLHttpRequest.prototype.open;
+            var origSend = XMLHttpRequest.prototype.send;
+            XMLHttpRequest.prototype.open = function(method, url) {
+                this._url = url; this._method = method;
+                try {
+                    var err = new Error();
+                    if (err.stack) {
+                        var lines = err.stack.split('\\n'); var targetLine = lines[2] || lines[1] || '';
+                        var match = targetLine.match(/:(\\d+):(\\d+)/); if (match && match[1]) this._line = parseInt(match[1]);
+                    }
+                } catch(e) {}
+                return origOpen.apply(this, arguments);
+            };
+            XMLHttpRequest.prototype.send = function() {
+                var self = this; var xhrLine = this._line || '?';
+                window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: this._url, method: this._method, status: 'SENDING', line: xhrLine}, '*');
+                this.addEventListener('load', function() {
+                    window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: self.status, line: xhrLine}, '*');
+                });
+                this.addEventListener('error', function() {
+                    window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: 'FAILED', line: xhrLine}, '*');
+                });
+                return origSend.apply(this, arguments);
+            };
 
-/**************************************
- *  K O P I O W A N I E
- **************************************/
-document.getElementById("copyBtn").addEventListener("click", () => {
-    navigator.clipboard.writeText(document.getElementById("summaryContent").textContent);
-    alert("Skopiowano podsumowanie do schowka.");
-});
+            function reportStorageSize() {
+                var totalBytes = 0;
+                for (var key in localStorage) {
+                    if (localStorage.hasOwnProperty(key)) {
+                        totalBytes += (localStorage[key].length + key.length) * 2;
+                    }
+                }
+                window.parent.postMessage({type: 'FDR_STORAGE_UPDATE', sizeBytes: totalBytes}, '*');
+            }
+            var origSetItem = localStorage.setItem;
+            localStorage.setItem = function(key, value) {
+                try {
+                    origSetItem.apply(this, arguments);
+                    window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'SET', key: key}, '*');
+                    reportStorageSize();
+                } catch(e) {
+                    if (e.name === 'QuotaExceededError' || e.code === 22) {
+                        window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'CRASH_OVERFLOW', key: key}, '*');
+                    }
+                    throw e;
+                }
+            };
+            var origRemoveItem = localStorage.removeItem;
+            localStorage.removeItem = function(key) {
+                origRemoveItem.apply(this, arguments);
+                window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'REMOVE', key: key}, '*');
+                reportStorageSize();
+            };
+            setTimeout(reportStorageSize, 500);
 
-/**************************************
- *  S T A R T
- **************************************/
-renderTabs();
-generateMaterialList();
-loadData();
-updateSummary();
-</script>
+            window.addEventListener('click', function(e) {
+                var el = e.target; if (!el || el === document.body || el === document.documentElement) return;
+                var tag = el.tagName.toLowerCase();
+                var id = el.id ? '#' + el.id : '';
+                var classes = el.className && typeof el.className === 'string' ? '.' + el.className.trim().replace(/\\s+/g, '.') : '';
+                var bounds = el.getBoundingClientRect();
+                var w = Math.round(bounds.width); var h = Math.round(bounds.height);
+                
+                window.parent.postMessage({type: 'FDR_INTERACTION_TOUCH', selector: tag + id + classes}, '*');
+                window.parent.postMessage({type: 'FDR_INSPECTOR_DOM', tag: tag, id: el.id, classes: classes, width: w, height: h}, '*');
+            }, true);
+        <\/script>`;
+
+        let devboxErrors = [];
+
+        function showErrors(){
+            if(devboxErrors.length===0){
+                showCustomModal({
+                    title:'Błędy',
+                    text:'Brak zarejestrowanych błędów.',
+                    showInput:false
+                });
+            }else{
+                showCustomModal({
+                    title:'Błędy',
+                    text:devboxErrors.slice(-5).join('\n'),
+                    showInput:false
+                });
+            }
+        }
+
+        function runCode() {
+            const code = editor.value; const sandbox = document.getElementById("preview-sandbox");
+            logToFDR(`Uruchamianie pliku: ${files[activeFileId].name}...`, "system");
+            
+            dynamicSpyOffset = fdrSpyScript.split('\n').length;
+            
+            const tofuMatches = code.match(tofuRegex); if (tofuMatches && tofuMatches.length > 0) { logToFDR(`WYKRYTO ${tofuMatches.length} USZKODZONE ZNAKI!`, 'warning'); }
+            
+            let finalCode = code;
+            if (code.includes('<head>')) { finalCode = code.replace('<head>', '<head>' + fdrSpyScript); } else { finalCode = fdrSpyScript + code; }
+            sandbox.srcdoc = finalCode;
+        }
+
+        function findLineByTextInEditor(searchText) {
+            const lines = editor.value.split('\n');
+            for (let i = 0; i < lines.length; i++) { if (lines[i].includes(searchText)) return i + 1; } return '?';
+        }
+
+        let lastFetchLineRegistered = '?';
+
+        window.addEventListener('message', function(event) {
+            if (!event.data) return;
+            
+            if (event.data.type === 'FDR_TELEMETRY_FPS') {
+                const fpsEl = document.getElementById('fdr-stat-fps');
+                if (fpsEl) {
+                    fpsEl.innerText = `FPS: ${event.data.fps}`;
+                    if (event.data.fps < 30) { fpsEl.classList.add('alert'); } else { fpsEl.classList.remove('alert'); }
+                }
+            }
+
+            if (event.data.type === 'FDR_STORAGE_UPDATE') {
+                const storageEl = document.getElementById('fdr-stat-storage');
+                if (storageEl) { storageEl.innerText = `DB: ${(event.data.sizeBytes / 1024).toFixed(2)} KB`; }
+            }
+
+            if (event.data.type === 'FDR_CONSOLE_LOG') { logToFDR(event.data.msg, event.data.mode); }
+
+            if (event.data.type === 'FDR_NETWORK_FETCH') {
+                let urlShort = event.data.url.replace(/^(?:\/\/|[^\/]+)*\//, "/");
+                let calibratedLine = event.data.line;
+                if (typeof calibratedLine === 'number') { calibratedLine = calibratedLine - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?'; }
+                if (calibratedLine !== '?') { lastFetchLineRegistered = calibratedLine; }
+
+                if (event.data.status === 'SENDING') { logToFDR(`Fetch GET -> "${urlShort}"... (Linia: ${calibratedLine})`, 'net'); }
+                else if (event.data.status === 'FAILED') { logToFDR(`Żądanie do "${urlShort}" FAILED! (Linia: ${calibratedLine})`, 'error'); }
+                else { logToFDR(`Odpowiedź z "${urlShort}" (Status: ${event.data.status})`, 'net'); }
+            }
+
+            if (event.data.type === 'FDR_NETWORK_XHR') {
+                let urlShort = event.data.url.replace(/^(?:\/\/|[^\/]+)*\//, "/");
+                let calibratedLine = event.data.line;
+                if (typeof calibratedLine === 'number') { calibratedLine = calibratedLine - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?'; }
+                
+                if (event.data.status === 'SENDING') { logToFDR(`XHR ${event.data.method} -> "${urlShort}"... (Linia: ${calibratedLine})`, 'net'); }
+                else if (event.data.status === 'FAILED') { logToFDR(`XHR do "${urlShort}" FAILED! (Linia: ${calibratedLine})`, 'error'); }
+                else { logToFDR(`Odpowiedź XHR z "${urlShort}" (Status: ${event.data.status})`, 'net'); }
+            }
+
+            if (event.data.type === 'FDR_STORAGE_LOG') {
+                if (event.data.action === 'SET') { logToFDR(`Zapisano klucz bazy: [${event.data.key}]`, 'storage'); }
+                else if (event.data.action === 'REMOVE') { logToFDR(`Usunięto klucz bazy: [${event.data.key}]`, 'storage'); }
+                else if (event.data.action === 'CRASH_OVERFLOW') { logToFDR(`CRASH BAZY: Przepełnienie limitu pamięci przy kluczu [${event.data.key}]!`, 'error'); }
+            }
+
+            if (event.data.type === 'FDR_INTERACTION_TOUCH') { logToFDR(`Dotknięto element: <${event.data.selector}>`, 'touch'); }
+
+            if (event.data.type === 'FDR_INSPECTOR_DOM') {
+                logToFDR(`Element &lt;${event.data.tag}&gt;${event.data.id ? ' ID: #'+event.data.id : ''} | Rozmiar: ${event.data.width}px × ${event.data.height}px`, 'inspect');
+            }
+
+            if (event.data.type === 'FDR_ERROR') {
+                let calibratedLine = event.data.line - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?';
+                devboxErrors.push(event.data.message); logToFDR(`CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
+            }
+            
+            if (event.data.type === 'FDR_PROMISE_ERROR') {
+                let calibratedLine = event.data.line; if (typeof calibratedLine === 'number') { calibratedLine = calibratedLine - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?'; }
+                if (calibratedLine === '?' && event.data.message.includes('Failed to fetch')) { calibratedLine = lastFetchLineRegistered; }
+                logToFDR(`ASYNC CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
+            }
+
+            if (event.data.type === 'FDR_PROMISE_STRING_ERROR') {
+                let cleanMsg = event.data.message.replace('Unhandled Promise: ', ''); let foundLine = findLineByTextInEditor(cleanMsg);
+                logToFDR(`ASYNC CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${foundLine})`, 'error');
+            }
+            
+            if (event.data.type === 'FDR_NET_ERROR') { logToFDR(`[SIECIOWY 404] Nie odnaleziono zasobu (<${event.data.tag.toLowerCase()}>): "${event.data.file}"`, 'error'); }
+        });
+
+        function gotoLine() {
+            showCustomModal({
+                title: "Przejdź do linii",
+                text: "Podaj numer linii:",
+                showInput: true,
+                inputDefault: "1",
+                onConfirm: function(v) {
+                    const line = Math.max(1, parseInt(v || 1));
+                    const lines = editor.value.split('\n');
+                    let pos = 0;
+                    for(let i=0;i<line-1 && i<lines.length;i++){
+                        pos += lines[i].length + 1;
+                    }
+                    editor.focus();
+                    editor.setSelectionRange(pos, pos);
+                }
+            });
+        }
+
+        function searchCode() {
+            showCustomModal({
+                title: "Znajdź",
+                text: "Wpisz tekst do wyszukania:",
+                showInput: true,
+                inputDefault: "",
+                onConfirm: function(v) {
+                    if(!v) return;
+                    const p = editor.value.indexOf(v);
+                    if(p >= 0){
+                        editor.focus();
+                        editor.setSelectionRange(p, p + v.length);
+                        logToFDR('Znaleziono: ' + v, 'inspect');
+                    } else {
+                        logToFDR('Nie znaleziono: ' + v, 'warning');
+                    }
+                }
+            });
+        }
+
+        if (window.innerWidth < 768) { switchView('edit'); } else { switchView('split'); }
+        initFileManager(); runCode();
+        
+        // PWA - Rejestracja Service Workera
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('Service Worker zarejestrowany pomyślnie:', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('Błąd rejestracji Service Workera:', err);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
