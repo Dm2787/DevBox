@@ -1,4 +1,4 @@
-const CACHE_NAME = 'devbox-v2.4-cache';
+const CACHE_NAME = 'devbox-v2.5-cache';
 const FILES_TO_CACHE = [
     './',
     './index.html',
