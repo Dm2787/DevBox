@@ -29,7 +29,7 @@
         }
 
         body {
-            background-color: #020202; /* Kolor ratunkowy dla urządzeń mobilnych */
+            background-color: #020202; 
             background: radial-gradient(circle at center, #0f1416 0%, #020202 100%);
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -177,7 +177,6 @@
             font-weight: bold; border-right: 2px solid #ff0055; display: inline-block; width: 100%; padding-right: 4px; box-sizing: border-box;
         }
 
-        /* Ujednolicony blok stylów dla zachowania idealnej pozycji kursora */
         .editor-container textarea, .editor-container pre {
             position: absolute; top: 0; left: 36px; width: calc(100% - 36px); height: 100%;
             margin: 0; padding: 10px; box-sizing: border-box;
@@ -188,12 +187,12 @@
 
         .editor-container textarea { 
             color: transparent; background: transparent; caret-color: #ffffff; z-index: 2; resize: none; 
-            -webkit-text-fill-color: transparent; /* Naprawa ukrywania czcionki na iOS bez psucia kursora */
+            -webkit-text-fill-color: transparent;
             overflow: auto;
         }
         .editor-container pre { 
             z-index: 1; color: #f8f8f2; pointer-events: none; 
-            overflow: hidden; /* Wyłączenie niezależnych suwaków chroni przed rozjeżdżaniem tekstu */
+            overflow: hidden; 
         }
         
         iframe { width: 100%; flex: 1; background: #fff; border: none; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px; }
@@ -300,6 +299,66 @@
 </head>
 <body>
 
+    <script>
+        (function() {
+            function wyswietlAwaryjnyCrash(tytul, tresc, zrodlo) {
+                if (zrodlo && zrodlo.includes('sandbox')) return; 
+                const errorOverlay = document.createElement('div');
+                errorOverlay.style.cssText = `
+                    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                    background: #090003; color: #ff0055; padding: 30px;
+                    box-sizing: border-box; z-index: 999999; font-family: monospace;
+                    font-size: 13px; line-height: 1.6; overflow: auto;
+                `;
+                errorOverlay.innerHTML = `
+                    <h1 style="color: #ff0055; margin-top: 0; font-size: 22px; border-bottom: 1px solid #ff0055; padding-bottom: 10px;">🚨 DEVBOX CRASH REPORT</h1>
+                    <p style="background: rgba(255, 0, 85, 0.1); padding: 12px; border-left: 4px solid #ff0055; color: #fff;">
+                        <strong>Typ błędu:</strong> ${tytul}
+                    </p>
+                    <p><strong>Komunikat:</strong> <span style="color: #ff7b72;">${tresc}</span></p>
+                    ${zrodlo ? `<p><strong>Lokalizacja:</strong> <span style="color: #58a6ff;">${zrodlo}</span></p>` : ''}
+                    <hr style="border: none; border-top: 1px solid rgba(255,0,85,0.2); margin: 20px 0;">
+                    <p style="color: #666; font-size: 11px;">Krytyczny błąd uniemożliwił stabilne działanie powłoki DevBox IDE.</p>
+                `;
+                if (document.body) { document.body.appendChild(errorOverlay); } 
+                else { window.addEventListener('DOMContentLoaded', () => document.body.appendChild(errorOverlay)); }
+            }
+            window.addEventListener('error', function(e) { wyswietlAwaryjnyCrash("Runtime Error", e.message, `${e.filename} -> linia ${e.lineno}:${e.colno}`); });
+            window.addEventListener('unhandledrejection', function(e) { wyswietlAwaryjnyCrash("Unhandled Promise", e.reason && e.reason.message ? e.reason.message : e.reason, "Rdzeń asynchroniczny"); });
+        })();
+    </script>
+
+    <div id="loading-overlay" style="position: fixed; top:0; left:0; width:100vw; height:100vh; background:#020202; color:#fff; display:flex; flex-direction:column; justify-content:center; align-items:center; z-index:999998; font-family:monospace; opacity:1; visibility:visible; transition: opacity 0.3s ease, visibility 0.3s;">
+        <div style="width: 45px; height: 45px; border: 3px solid rgba(0,255,255,0.05); border-top: 3px solid #00ffff; border-radius: 50%; animation: devbox-spin 0.7s linear infinite; margin-bottom: 25px; box-shadow: 0 0 15px rgba(0,255,255,0.2);"></div>
+        <div id="loading-text" style="margin-bottom: 12px; font-size: 12px; letter-spacing: 1px; color: #00ffff; text-shadow: 0 0 6px rgba(0,255,255,0.3); text-transform: uppercase;">Inicjalizacja DevBox IDE...</div>
+        <div style="width: 240px; height: 4px; background: rgba(255,255,255,0.03); border-radius: 2px; overflow: hidden; border: 1px solid rgba(0,255,255,0.1);">
+            <div id="loading-bar" style="width: 5%; height: 100%; background: linear-gradient(90deg, #00ffff, #0088cc); transition: width 0.15s ease;"></div>
+        </div>
+        <div id="loading-percentage" style="margin-top: 8px; font-size: 11px; color: #555;">5%</div>
+    </div>
+    <style>
+        @keyframes devbox-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+    <script>
+        function pokazLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) { overlay.style.opacity = '1'; overlay.style.visibility = 'visible'; }
+            ustawLoading(5, "Przygotowanie piaskownicy...");
+        }
+        function ustawLoading(procent, komunikat) {
+            const bar = document.getElementById('loading-bar');
+            const text = document.getElementById('loading-text');
+            const pct = document.getElementById('loading-percentage');
+            if (bar) bar.style.width = procent + '%';
+            if (text && komunikat) text.innerText = komunikat;
+            if (pct) pct.innerText = procent + '%';
+        }
+        function ukryjLoading() {
+            const overlay = document.getElementById('loading-overlay');
+            if (overlay) { overlay.style.opacity = '0'; overlay.style.visibility = 'hidden'; }
+        }
+    </script>
+
     <header>
         <h1>⚡ DEVBOX // FDR v2.4</h1>
     </header>
@@ -317,7 +376,7 @@
             <button class="btn-run error-btn" onclick="showErrors()">BŁĘDY</button>
             <button class="btn-run" onclick="searchCode()">SZUKAJ</button>
             <button class="btn-run" onclick="gotoLine()">LINIA</button>
-            <button class="btn-run primary-run" onclick="runCode()">URUCHOM</button>
+            <button class="btn-run primary-run" onclick="runCode(false)">URUCHOM</button>
         </div>
     </div>
 
@@ -328,7 +387,9 @@
             <input type="file" id="hidden-file-input" onchange="loadFileFromDisk(event)" accept=".html,.css,.js,.txt">
         </div>
         <div class="files-zone" id="file-tabs-container"></div>
-        <button class="btn-add-file-icon" onclick="createNewFile()" title="Nowy Plik">+</button>
+        <div style="display: flex; gap: 4px; flex-shrink: 0;">
+            <button class="btn-add-file-icon" onclick="createNewFile()" title="Nowy Plik">+</button>
+        </div>
     </div>
 
     <div class="workspace">
@@ -410,7 +471,7 @@
 
             titleEl.innerText = title; textEl.innerText = text;
             if (showInput) { inputEl.style.display = 'block'; inputEl.value = inputDefault || ''; } else { inputEl.style.display = 'none'; }
-            if (onConfirm) { btnCancel.style.display = showInput || text.includes('usunąć') || text.includes('zaktualizować') ? 'inline-block' : 'none'; } else { btnCancel.style.display = 'none'; }
+            if (onConfirm) { btnCancel.style.display = showInput || text.includes('usunąć') || text.includes('zaktualizować') || text.includes('WSZYSTKIE') ? 'inline-block' : 'none'; } else { btnCancel.style.display = 'none'; }
             modal.classList.add('active');
 
             const newBtnConfirm = btnConfirm.cloneNode(true); const newBtnCancel = btnCancel.cloneNode(true);
@@ -434,16 +495,19 @@
         }
 
         function initFileManager() {
+            ustawLoading(25, "Wczytywanie menedżera plików...");
             const saved = localStorage.getItem('devbox_multianalog_files');
             const savedActive = localStorage.getItem('devbox_active_file_id');
             if (saved) {
-                files = JSON.parse(saved); activeFileId = savedActive || Object.keys(files)[0];
-                let hasIndex = false; for (const id in files) { if (files[id].name === 'index.html') { hasIndex = true; break; } }
-                if (!hasIndex) { files['file_index'] = { name: 'index.html', content: defaultIndexCode }; activeFileId = 'file_index'; }
+                files = JSON.parse(saved);
+                if (Object.keys(files).length === 0) {
+                    files['file_index'] = { name: 'index.html', content: defaultIndexCode };
+                }
+                activeFileId = (savedActive && files[savedActive]) ? savedActive : Object.keys(files)[0];
             } else {
                 files['file_index'] = { name: 'index.html', content: defaultIndexCode }; activeFileId = 'file_index';
             }
-            saveToStorage(); renderFileTabs(); loadFileContent(activeFileId);
+            saveToStorage(); renderFileTabs(); loadFileContent(activeFileId); updateGlobalStorageStat();
         }
 
         function renderFileTabs() {
@@ -484,30 +548,56 @@
             reader.readAsText(file); event.target.value = '';
         }
 
-        function setActiveFile(id) { if (activeFileId === id) return; activeFileId = id; localStorage.setItem('devbox_active_file_id', activeFileId); renderFileTabs(); loadFileContent(id); }
-        function loadFileContent(id) { editor.value = files[id].content; currentFileTitle.innerText = `Edytor: ${files[id].name}`; updateHighlight(); }
+        function setActiveFile(id) { 
+            if (activeFileId === id) return; 
+            activeFileId = id; 
+            localStorage.setItem('devbox_active_file_id', activeFileId); 
+            renderFileTabs(); 
+            loadFileContent(id); 
+            runCode(true); 
+        }
+        
+        function loadFileContent(id) { 
+            if (!files[id]) {
+                id = 'file_index'; activeFileId = 'file_index';
+                localStorage.setItem('devbox_active_file_id', 'file_index');
+                if (!files[id]) { files['file_index'] = { name: 'index.html', content: defaultIndexCode }; }
+            }
+            editor.value = files[id].content; 
+            currentFileTitle.innerText = `Edytor: ${files[id].name}`; 
+            updateHighlight(); 
+        }
 
         function deleteFile(event, id) {
-            event.stopPropagation(); if (files[id].name === 'index.html') { showCustomModal({ title: "Błąd operacji", text: "Nie można usunąć pliku index.html!", showInput: false }); return; }
+            event.stopPropagation();
             showCustomModal({
                 title: "Usuwanie pliku", text: `Czy na pewno usunąć plik "${files[id].name}"?`, showInput: false,
                 onConfirm: (confirmed) => {
                     if (confirmed) {
                         const name = files[id].name; delete files[id];
-                        if (activeFileId === id) { activeFileId = 'file_index'; localStorage.setItem('devbox_active_file_id', activeFileId); }
-                        saveToStorage(); renderFileTabs(); loadFileContent(activeFileId); logToFDR(`Usunięto plik z edytora: ${name}`, 'system');
+                        
+                        if (Object.keys(files).length === 0) {
+                            files['file_index'] = { name: 'index.html', content: defaultIndexCode };
+                            activeFileId = 'file_index';
+                        } else if (activeFileId === id) {
+                            activeFileId = Object.keys(files)[0];
+                        }
+                        
+                        localStorage.setItem('devbox_active_file_id', activeFileId);
+                        saveToStorage(); renderFileTabs(); loadFileContent(activeFileId); runCode(true); logToFDR(`Usunięto plik z edytora: ${name}`, 'system');
                     }
                 }
             });
         }
 
-        function saveToStorage() {
-            localStorage.setItem('devbox_multianalog_files', JSON.stringify(files));
-        }
+        function saveToStorage() { localStorage.setItem('devbox_multianalog_files', JSON.stringify(files)); updateGlobalStorageStat(); }
+        function saveToStorageDebounced() { clearTimeout(saveTimer); saveTimer = setTimeout(saveToStorage, 500); }
 
-        function saveToStorageDebounced() {
-            clearTimeout(saveTimer);
-            saveTimer = setTimeout(saveToStorage, 500);
+        function updateGlobalStorageStat() {
+            let totalBytes = 0;
+            for (let key in localStorage) { if (localStorage.hasOwnProperty(key)) { totalBytes += (localStorage[key].length + key.length) * 2; } }
+            const storageEl = document.getElementById('fdr-stat-storage');
+            if (storageEl) { storageEl.innerText = `DB: ${(totalBytes / 1024).toFixed(2)} KB`; }
         }
 
         function syntaxHighlighter(text) {
@@ -560,15 +650,9 @@
             const timestamp = new Date().toLocaleTimeString('pl-PL');
             const logCard = document.createElement('div');
             logCard.className = 'fdr-log-card';
-            logCard.innerHTML = `
-                <span class="fdr-time">${timestamp}</span>
-                <span class="fdr-badge ${type}">${type}</span>
-                <span class="fdr-msg">${msg}</span>
-            `;
+            logCard.innerHTML = `<span class="fdr-time">${timestamp}</span><span class="fdr-badge ${type}">${type}</span><span class="fdr-msg">${msg}</span>`;
             consoleEl.appendChild(logCard);
-            while (consoleEl.children.length > MAX_FDR_LOGS) {
-                consoleEl.removeChild(consoleEl.firstChild);
-            }
+            while (consoleEl.children.length > MAX_FDR_LOGS) { consoleEl.removeChild(consoleEl.firstChild); }
             consoleEl.scrollTop = consoleEl.scrollHeight;
         }
 
@@ -656,22 +740,14 @@
             XMLHttpRequest.prototype.send = function() {
                 var self = this; var xhrLine = this._line || '?';
                 window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: this._url, method: this._method, status: 'SENDING', line: xhrLine}, '*');
-                this.addEventListener('load', function() {
-                    window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: self.status, line: xhrLine}, '*');
-                });
-                this.addEventListener('error', function() {
-                    window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: 'FAILED', line: xhrLine}, '*');
-                });
+                this.addEventListener('load', function() { window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: self.status, line: xhrLine}, '*'); });
+                this.addEventListener('error', function() { window.parent.postMessage({type: 'FDR_NETWORK_XHR', url: self._url, method: self._method, status: 'FAILED', line: xhrLine}, '*'); });
                 return origSend.apply(this, arguments);
             };
 
             function reportStorageSize() {
                 var totalBytes = 0;
-                for (var key in localStorage) {
-                    if (localStorage.hasOwnProperty(key)) {
-                        totalBytes += (localStorage[key].length + key.length) * 2;
-                    }
-                }
+                for (var key in localStorage) { if (localStorage.hasOwnProperty(key)) { totalBytes += (localStorage[key].length + key.length) * 2; } }
                 window.parent.postMessage({type: 'FDR_STORAGE_UPDATE', sizeBytes: totalBytes}, '*');
             }
             var origSetItem = localStorage.setItem;
@@ -681,9 +757,7 @@
                     window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'SET', key: key}, '*');
                     reportStorageSize();
                 } catch(e) {
-                    if (e.name === 'QuotaExceededError' || e.code === 22) {
-                        window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'CRASH_OVERFLOW', key: key}, '*');
-                    }
+                    if (e.name === 'QuotaExceededError' || e.code === 22) { window.parent.postMessage({type: 'FDR_STORAGE_LOG', action: 'CRASH_OVERFLOW', key: key}, '*'); }
                     throw e;
                 }
             };
@@ -702,7 +776,6 @@
                 var classes = el.className && typeof el.className === 'string' ? '.' + el.className.trim().replace(/\\s+/g, '.') : '';
                 var bounds = el.getBoundingClientRect();
                 var w = Math.round(bounds.width); var h = Math.round(bounds.height);
-                
                 window.parent.postMessage({type: 'FDR_INTERACTION_TOUCH', selector: tag + id + classes}, '*');
                 window.parent.postMessage({type: 'FDR_INSPECTOR_DOM', tag: tag, id: el.id, classes: classes, width: w, height: h}, '*');
             }, true);
@@ -711,23 +784,44 @@
         let devboxErrors = [];
 
         function showErrors(){
-            if(devboxErrors.length===0){
-                showCustomModal({ title:'Błędy', text:'Brak zarejestrowanych błędów.', showInput:false });
-            }else{
-                showCustomModal({ title:'Błędy', text:devboxErrors.slice(-5).join('\n'), showInput:false });
-            }
+            if(devboxErrors.length===0){ showCustomModal({ title:'Błędy', text:'Brak zarejestrowanych błędów.', showInput:false }); }
+            else { showCustomModal({ title:'Błędy', text:devboxErrors.slice(-5).join('\n'), showInput:false }); }
         }
 
-        function runCode() {
+        function runCode(silent = false) {
             const code = editor.value; const sandbox = document.getElementById("preview-sandbox");
-            logToFDR(`Uruchamianie pliku: ${files[activeFileId].name}...`, "system");
             
+            if (!silent) {
+                pokazLoading();
+                ustawLoading(20, "Kompilacja i sprawdzanie błędów...");
+            }
+            
+            logToFDR(`Uruchamianie pliku: ${files[activeFileId] ? files[activeFileId].name : 'index.html'}...`, "system");
             dynamicSpyOffset = fdrSpyScript.split('\n').length;
             
             const tofuMatches = code.match(tofuRegex); if (tofuMatches && tofuMatches.length > 0) { logToFDR(`WYKRYTO ${tofuMatches.length} USZKODZONE ZNAKI!`, 'warning'); }
             
             let finalCode = code;
             if (code.includes('<head>')) { finalCode = code.replace('<head>', '<head>' + fdrSpyScript); } else { finalCode = fdrSpyScript + code; }
+            
+            if (!silent) {
+                ustawLoading(55, "Wstrzykiwanie telemetrii FDR v2.4...");
+                sandbox.onload = function() {
+                    ustawLoading(85, "Renderowanie interfejsu aplikacji...");
+                    setTimeout(() => {
+                        ustawLoading(100, "Uruchomiono pomyślnie!");
+                        ukryjLoading();
+                        updateGlobalStorageStat();
+                        sandbox.onload = null;
+                    }, 350);
+                };
+            } else {
+                sandbox.onload = function() {
+                    updateGlobalStorageStat();
+                    sandbox.onload = null;
+                };
+            }
+
             sandbox.srcdoc = finalCode;
         }
 
@@ -749,11 +843,7 @@
                 }
             }
 
-            if (event.data.type === 'FDR_STORAGE_UPDATE') {
-                const storageEl = document.getElementById('fdr-stat-storage');
-                if (storageEl) { storageEl.innerText = `DB: ${(event.data.sizeBytes / 1024).toFixed(2)} KB`; }
-            }
-
+            if (event.data.type === 'FDR_STORAGE_UPDATE') { updateGlobalStorageStat(); }
             if (event.data.type === 'FDR_CONSOLE_LOG') { logToFDR(event.data.msg, event.data.mode); }
 
             if (event.data.type === 'FDR_NETWORK_FETCH') {
@@ -781,6 +871,7 @@
                 if (event.data.action === 'SET') { logToFDR(`Zapisano klucz bazy: [${event.data.key}]`, 'storage'); }
                 else if (event.data.action === 'REMOVE') { logToFDR(`Usunięto klucz bazy: [${event.data.key}]`, 'storage'); }
                 else if (event.data.action === 'CRASH_OVERFLOW') { logToFDR(`CRASH BAZY: Przepełnienie limitu pamięci przy kluczu [${event.data.key}]!`, 'error'); }
+                updateGlobalStorageStat();
             }
 
             if (event.data.type === 'FDR_INTERACTION_TOUCH') { logToFDR(`Dotknięto element: <${event.data.selector}>`, 'touch'); }
@@ -791,18 +882,18 @@
 
             if (event.data.type === 'FDR_ERROR') {
                 let calibratedLine = event.data.line - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?';
-                devboxErrors.push(event.data.message); logToFDR(`CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
+                devboxErrors.push(event.data.message); logToFDR(`CRASH W [${files[activeFileId] ? files[activeFileId].name : 'Plik'}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
             }
             
             if (event.data.type === 'FDR_PROMISE_ERROR') {
                 let calibratedLine = event.data.line; if (typeof calibratedLine === 'number') { calibratedLine = calibratedLine - dynamicSpyOffset; if (calibratedLine <= 0) calibratedLine = '?'; }
                 if (calibratedLine === '?' && event.data.message.includes('Failed to fetch')) { calibratedLine = lastFetchLineRegistered; }
-                logToFDR(`ASYNC CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
+                logToFDR(`ASYNC CRASH W [${files[activeFileId] ? files[activeFileId].name : 'Plik'}]: ${event.data.message} (Linia: ${calibratedLine})`, 'error');
             }
 
             if (event.data.type === 'FDR_PROMISE_STRING_ERROR') {
                 let cleanMsg = event.data.message.replace('Unhandled Promise: ', ''); let foundLine = findLineByTextInEditor(cleanMsg);
-                logToFDR(`ASYNC CRASH W [${files[activeFileId].name}]: ${event.data.message} (Linia: ${foundLine})`, 'error');
+                logToFDR(`ASYNC CRASH W [${files[activeFileId] ? files[activeFileId].name : 'Plik'}]: ${event.data.message} (Linia: ${foundLine})`, 'error');
             }
             
             if (event.data.type === 'FDR_NET_ERROR') { logToFDR(`[SIECIOWY 404] Nie odnaleziono zasobu (<${event.data.tag.toLowerCase()}>): "${event.data.file}"`, 'error'); }
@@ -831,41 +922,32 @@
         }
 
         if (window.innerWidth < 768) { switchView('edit'); } else { switchView('split'); }
-        initFileManager(); runCode();
         
-        // PWA - Automatyczne zarządzanie wersjami i wykrywanie aktualizacji w tle
+        setTimeout(() => {
+            ustawLoading(60, "Renderowanie interfejsu IDE...");
+            initFileManager(); 
+            ustawLoading(90, "Budowanie pierwszej kompilacji...");
+            runCode(false); 
+        }, 200);
+        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then(registration => {
                         console.log('Service Worker zarejestrowany:', registration.scope);
-                        
-                        // Przypadek 1: Nowy kod już czeka w pamięci podręcznej na aktywację
-                        if (registration.waiting) {
-                            promptForAppUpdate(registration.waiting);
-                        }
-                        
-                        // Przypadek 2: Nowy kod został właśnie pobrany w tle podczas pracy
+                        if (registration.waiting) { promptForAppUpdate(registration.waiting); }
                         registration.addEventListener('updatefound', () => {
                             const newWorker = registration.installing;
                             newWorker.addEventListener('statechange', () => {
-                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                    promptForAppUpdate(newWorker);
-                                }
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) { promptForAppUpdate(newWorker); }
                             });
                         });
                     })
                     .catch(err => console.log('Błąd SW:', err));
             });
 
-            // Automatyczne odświeżenie widoku w momencie przejęcia kontroli przez nowy skrypt
             let refreshing = false;
-            navigator.serviceWorker.addEventListener('controllerchange', () => {
-                if (!refreshing) {
-                    refreshing = true;
-                    window.location.reload();
-                }
-            });
+            navigator.serviceWorker.addEventListener('controllerchange', () => { if (!refreshing) { refreshing = true; window.location.reload(); } });
         }
 
         function promptForAppUpdate(worker) {
@@ -874,11 +956,7 @@
                 title: "Dostępna aktualizacja",
                 text: "Wykryto nową wersję aplikacji DevBox. Czy chcesz przeładować edytor, aby zastosować zmiany?",
                 showInput: false,
-                onConfirm: (confirmed) => {
-                    if (confirmed) {
-                        worker.postMessage({ action: 'skipWaiting' });
-                    }
-                }
+                onConfirm: (confirmed) => { if (confirmed) { worker.postMessage({ action: 'skipWaiting' }); } }
             });
         }
     </script>
