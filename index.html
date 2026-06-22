@@ -376,6 +376,7 @@
             <button class="btn-run error-btn" onclick="showErrors()">BŁĘDY</button>
             <button class="btn-run" onclick="searchCode()">SZUKAJ</button>
             <button class="btn-run" onclick="gotoLine()">LINIA</button>
+            <button class="btn-run" onclick="openInNewWindow()" style="border-color: var(--accent-color); color: var(--accent-color);">WWW</button>
             <button class="btn-run primary-run" onclick="runCode(false)">URUCHOM</button>
         </div>
     </div>
@@ -786,6 +787,14 @@
         function showErrors(){
             if(devboxErrors.length===0){ showCustomModal({ title:'Błędy', text:'Brak zarejestrowanych błędów.', showInput:false }); }
             else { showCustomModal({ title:'Błędy', text:devboxErrors.slice(-5).join('\n'), showInput:false }); }
+        }
+
+        function openInNewWindow() {
+            const code = editor.value;
+            const blob = new Blob([code], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            logToFDR("Otwarto podgląd w zewnętrznej przeglądarce", "system");
         }
 
         function runCode(silent = false) {
