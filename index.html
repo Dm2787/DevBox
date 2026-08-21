@@ -182,25 +182,23 @@
             position: absolute; top: 0; left: 36px; width: calc(100% - 36px); height: 100%;
             margin: 0; padding: 10px; box-sizing: border-box;
             font-family: Menlo, Monaco, Consolas, "Courier New", monospace; font-size: 12px; line-height: 1.5;
-            white-space: pre !important; /* Wymuszamy absolutny brak zawijania */
+            white-space: pre !important; 
             word-wrap: normal;
             overflow-wrap: normal;
             border: none; outline: none; background: transparent;
             letter-spacing: normal; word-spacing: normal;
-            -webkit-text-size-adjust: 100%; /* Blokuje dziwne skalowanie czcionek na tel */
-            tab-size: 4; /* Ujednolica szerokość tabulatorów */
+            -webkit-text-size-adjust: 100%; 
+            tab-size: 4; 
         }
 
         .editor-container textarea { 
             color: transparent; background: transparent; caret-color: #ffffff; z-index: 2; resize: none; 
             -webkit-text-fill-color: transparent;
             overflow: auto;
-            
-            /* Ukrywamy scrollbary, żeby nie zabierały przestrzeni i nie psuły synchronizacji z PRE */
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
-        /* Ukrycie scrollbara dla Chrome/Safari/Brave */
+        
         .editor-container textarea::-webkit-scrollbar {
             display: none;
         }
@@ -411,13 +409,17 @@
 
     <div class="workspace">
         <div id="panel-editor" class="panel">
+            <!-- Wdrożone przyciski KOPIUJ i USUŃ -->
             <div class="panel-header">
-                <span id="current-file-title">Edytor kodu</span>
+                <span id="current-file-title" style="flex: 1;">Edytor kodu</span>
+                <div style="display: flex; gap: 6px; margin-right: 10px;">
+                    <button class="btn-disk-action" style="background: rgba(0,255,255,0.05); color: #00ffff; border-color: rgba(0,255,255,0.3);" onclick="copyAllCode()">KOPIUJ</button>
+                    <button class="btn-disk-action" style="background: rgba(248,81,73,0.05); color: #f85149; border-color: rgba(248,81,73,0.3);" onclick="clearEditor()">USUŃ</button>
+                </div>
                 <div id="editor-stats" class="status-bar">Linie: 1 | Rozmiar: 0 KB</div>
             </div>
             <div class="editor-container">
                 <div id="gutter" class="line-numbers">1</div>
-                <!-- Dodano atrybuty blokujące klawiaturę -->
                 <textarea id="code-editor" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" data-gramm="false"></textarea>
                 <pre aria-hidden="true"><code id="highlight-layer"></code></pre>
             </div>
@@ -646,11 +648,8 @@
             gutter.innerHTML = linesHtml; if (activeFileId && files[activeFileId]) { files[activeFileId].content = text; saveToStorageDebounced(); }
         }
 
-        // --- Zmodyfikowana funkcja updateHighlight ---
         function updateHighlight() { 
             let text = editor.value;
-            // Hack: Jeśli tekst kończy się nową linią, dodajemy niewidoczną spację, 
-            // żeby warstwa podświetlenia (PRE) poprawnie wygenerowała wysokość tej linii.
             if(text.length > 0 && text[text.length-1] === "\n") {
                 text += " ";
             }
@@ -954,6 +953,43 @@
                     if(!v) return; const p = editor.value.indexOf(v);
                     if(p >= 0){ editor.focus(); editor.setSelectionRange(p, p + v.length); logToFDR('Znaleziono: ' + v, 'inspect'); } 
                     else { logToFDR('Nie znaleziono: ' + v, 'warning'); }
+                }
+            });
+        }
+
+        // --- FUNKCJE KOPIOWANIA I CZYSZCZENIA KODU ---
+        
+        function copyAllCode() {
+            const text = editor.value;
+            if (!text) {
+                showToast("BRAK KODU DO SKOPIOWANIA");
+                return;
+            }
+            
+            navigator.clipboard.writeText(text).then(() => {
+                editor.select();
+                showToast("SKOPIOWANO CAŁY KOD!");
+                logToFDR("Skopiowano zawartość edytora do schowka.", "system");
+            }).catch(err => {
+                logToFDR("Błąd kopiowania do schowka: " + err, "error");
+            });
+        }
+
+        function clearEditor() {
+            if (!editor.value) return; 
+            
+            showCustomModal({
+                title: "Wyczyść edytor", 
+                text: "Czy na pewno chcesz trwale usunąć WSZYSTKIE linie kodu z tego pliku?", 
+                showInput: false,
+                onConfirm: (confirmed) => {
+                    if (confirmed) {
+                        editor.value = "";
+                        updateHighlight(); 
+                        showToast("WYCZYSZCZONO EDYTOR!");
+                        logToFDR("Wyczyszczono zawartość pliku w edytorze.", "system");
+                        editor.focus();
+                    }
                 }
             });
         }
